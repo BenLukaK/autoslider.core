@@ -1,5 +1,18 @@
 # autoslider.core 0.3.3.9000
 
+ * Per-slide font sizes: `generate_slides()` now reads an optional `font_size:`
+   block (`body`/`header`/`footer`) and `table_format` from each output's spec
+   entry, and a deck-wide `font_size` argument. Sizes are applied via the new
+   exported `with_font_sizes()` helper, which injects sizes into any table
+   formatter (only forwarding sizes the formatter accepts).
+ * `autoslider_format()` and `black_format_tb()` gain a `footer_font_size`
+   argument.
+ * `to_flextable.data.frame()`: `font_size` now defaults to `NULL` and the
+   uniform font override is only applied when it is explicitly set, so font
+   sizes coming from `table_format` are no longer overwritten. Note: plain
+   data-frame slides that previously rendered at the hard-coded 9pt now follow
+   the sizes from `table_format` unless `font_size` is supplied.
+
 # autoslider.core 0.3.3
 
  * Adding mcp server.

@@ -182,7 +182,7 @@ to_flextable.dgtsummary <- function(x, lpp = 20, ppt_height = NULL, ppt_width = 
 #' convert data.frame to flextable
 #' @export
 to_flextable.data.frame <- function(x, col_width = NULL, table_format = orange_format,
-                                    dose_template = FALSE, font_size = 9, ...) {
+                                    dose_template = FALSE, font_size = NULL, ...) {
   df <- x
   ft <- do_call(flextable, data = df, ...)
 
@@ -205,9 +205,16 @@ to_flextable.data.frame <- function(x, col_width = NULL, table_format = orange_f
     }
   }
 
-  ft |>
-    table_format(...) |>
-    fontsize(size = font_size, part = "all")
+  ft <- ft |>
+    table_format(...)
+
+  # font_size, when supplied, forces a uniform size across the whole table and
+  # therefore overrides any sizing done by `table_format`. Left NULL by default
+  # so per-slide font sizes injected into `table_format` are preserved.
+  if (!is.null(font_size)) {
+    ft <- ft |> fontsize(size = font_size, part = "all")
+  }
+  ft
 }
 
 

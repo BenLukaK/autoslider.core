@@ -572,6 +572,9 @@ do_call <- function(fun, ...) {
   do.call(fun, args[intersect(names(args), formalArgs(fun))])
 }
 
+# Null-coalescing helper (base R gains `%||%` only in 4.4.0; package supports 4.1.0)
+`%||%` <- function(a, b) if (is.null(a)) b else a
+
 
 #' Build table header, a utility function to help with construct structured header for table layout
 #' @param anl analysis data object

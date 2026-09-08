@@ -15,6 +15,7 @@ generate_slides(
   l_lpp = 20,
   l_cpp = 150,
   fig_editable = FALSE,
+  font_size = NULL,
   ...
 )
 }
@@ -43,6 +44,11 @@ Specify this optional argument to modify the width of all of the listings displa
 
 \item{fig_editable}{whether we want the figure to be editable in pptx viewers, defaults to FALSE}
 
+\item{font_size}{Deck-wide default table font sizes, a named `list` with any
+of `body`, `header`, `footer` (point sizes). Per-slide sizes declared in the
+spec (a `font_size:` block on the entry) override these. Applied by wrapping
+the slide's `table_format` via [with_font_sizes()]; see Details.}
+
 \item{...}{arguments passed to program}
 }
 \value{
@@ -50,6 +56,26 @@ No return value, called for side effects
 }
 \description{
 generate slides based on output
+}
+\details{
+## Per-slide font size
+Each output carries its spec entry as an attribute (set by
+[generate_outputs()]). `generate_slides()` reads two optional keys from it:
+`table_format` (a formatter function) and `font_size` (a named list with
+`body`/`header`/`footer`). The effective formatter for a slide is
+`with_font_sizes(table_format, body, header, footer)`, so font sizes can be
+set per slide directly in the spec, e.g.
+\preformatted{
+t_dm_slide_FAS:
+  program: t_dm_slide
+  suffix: FAS
+  table_format: black_format_tb
+  font_size:
+    body: 6
+    header: 6
+    footer: 5
+}
+The `font_size` argument sets deck-wide defaults; per-slide values win.
 }
 \examples{
 \dontshow{if (require(filters)) withAutoprint(\{ # examplesIf}

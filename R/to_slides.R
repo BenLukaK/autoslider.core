@@ -14,8 +14,31 @@
 #' @param l_cpp An integer specifying the listing columns per page\cr
 #'    Specify this optional argument to modify the width of all of the listings display
 #' @param fig_editable whether we want the figure to be editable in pptx viewers, defaults to FALSE
+#' @param font_size Deck-wide default table font sizes, a named `list` with any
+#'   of `body`, `header`, `footer` (point sizes). Per-slide sizes declared in the
+#'   spec (a `font_size:` block on the entry) override these. Applied by wrapping
+#'   the slide's `table_format` via [with_font_sizes()]; see Details.
 #' @param ... arguments passed to program
 #' @return No return value, called for side effects
+#' @details
+#' ## Per-slide font size
+#' Each output carries its spec entry as an attribute (set by
+#' [generate_outputs()]). `generate_slides()` reads two optional keys from it:
+#' `table_format` (a formatter function) and `font_size` (a named list with
+#' `body`/`header`/`footer`). The effective formatter for a slide is
+#' `with_font_sizes(table_format, body, header, footer)`, so font sizes can be
+#' set per slide directly in the spec, e.g.
+#' \preformatted{
+#' t_dm_slide_FAS:
+#'   program: t_dm_slide
+#'   suffix: FAS
+#'   table_format: black_format_tb
+#'   font_size:
+#'     body: 6
+#'     header: 6
+#'     footer: 5
+#' }
+#' The `font_size` argument sets deck-wide defaults; per-slide values win.
 #' @export
 #' @examplesIf require(filters)
 #'
@@ -49,7 +72,8 @@ generate_slides <- function(outputs,
                             outfile = paste0(tempdir(), "/output.pptx"),
                             template = file.path(system.file(package = "autoslider.core"), "theme/basic.pptx"),
                             fig_width = 9, fig_height = 5, t_lpp = 20, t_cpp = 200,
-                            l_lpp = 20, l_cpp = 150, fig_editable = FALSE, ...) {
+                            l_lpp = 20, l_cpp = 150, fig_editable = FALSE,
+                            font_size = NULL, ...) {
   if (any(c(
     inherits(outputs, "VTableTree"),
     inherits(outputs, "listing_df")
@@ -94,6 +118,43 @@ generate_slides <- function(outputs,
   assert_that(is.list(outputs))
 
   # ======== generate slides =======#
+  # Arguments forwarded to to_flextable()/table_to_slide(). `table_format` and
+  # `font_size` are managed per-slide below, so they are pulled out of the
+  # forwarded set to avoid clashing with the values we inject.
+  dots <- list(...)
+  fwd <- dots
+  fwd$table_format <- NULL
+
+  # Deck-wide default font sizes. Accept the tidy `font_size = list(...)` form
+  # and, for backwards compatibility, scalar *_font_size passed via `...`.
+  deck_fs <- font_size %||% list()
+  deck_fs$body <- deck_fs$body %||% dots$body_font_size
+  deck_fs$header <- deck_fs$header %||% dots$header_font_size
+  deck_fs$footer <- deck_fs$footer %||% dots$footer_font_size
+  fwd$body_font_size <- NULL
+  fwd$header_font_size <- NULL
+  fwd$footer_font_size <- NULL
+
+  # Merge deck defaults with a slide's own spec `font_size` block (slide wins).
+  slide_fs <- function(x) {
+    sp <- attr(x, "spec")
+    modifyList(deck_fs, (sp$font_size) %||% list())
+  }
+  # Effective formatter for a slide: its spec `table_format` (else the deck-wide
+  # one, else `default_fmt`), wrapped so the resolved font sizes are applied.
+  resolve_format <- function(x, default_fmt) {
+    sp <- attr(x, "spec")
+    fs <- slide_fs(x)
+    base_fmt <- (sp$table_format) %||% dots$table_format %||% default_fmt
+    with_font_sizes(base_fmt, fs$body, fs$header, fs$footer)
+  }
+  call_ft <- function(x, more) {
+    do.call(to_flextable, c(list(x = x), more, fwd))
+  }
+  call_slide <- function(content, more) {
+    do.call(table_to_slide, c(list(ppt = ppt, content = content), more, fwd))
+  }
+
   # set slides layout
   ppt <- read_pptx(path = template)
   location_ <- officer::fortify_location(ph_location_fullsize(), doc = ppt)
@@ -103,38 +164,43 @@ generate_slides <- function(outputs,
   # add content to slides template
   for (x in outputs) {
     if (inherits(x, "dVTableTree") || inherits(x, "VTableTree")) {
-      y <- to_flextable(x, lpp = t_lpp, cpp = t_cpp, ...)
+      tf <- resolve_format(x, orange_format)
+      footer_pt <- slide_fs(x)$footer
+      y <- call_ft(x, list(lpp = t_lpp, cpp = t_cpp, table_format = tf))
       usernotes <- x@usernotes
       for (tt in y) {
-        table_to_slide(ppt,
-          content = tt,
+        call_slide(tt, list(
           table_loc = center_table_loc(tt$ft, ppt_width = width, ppt_height = height),
-          usernotes = usernotes, ...
-        )
+          usernotes = usernotes, footer_font_size = footer_pt
+        ))
       }
     } else if (inherits(x, "dlisting")) {
-      y <- to_flextable(x, cpp = l_cpp, lpp = l_lpp, ...)
+      y <- call_ft(x, list(cpp = l_cpp, lpp = l_lpp))
       for (tt in y) {
-        table_to_slide(ppt,
-          content = tt,
-          table_loc = center_table_loc(tt$ft, ppt_width = width, ppt_height = height), ...
-        )
+        call_slide(tt, list(
+          table_loc = center_table_loc(tt$ft, ppt_width = width, ppt_height = height)
+        ))
       }
     } else if (inherits(x, "data.frame")) { # this is dedicated for small data frames without pagination
-      y <- to_flextable(x, ...)
-      table_to_slide(ppt, content = y, decor = FALSE, ...)
+      tf <- resolve_format(x, orange_format)
+      y <- call_ft(x, list(table_format = tf))
+      call_slide(y, list(decor = FALSE))
     } else if (inherits(x, "dgtsummary")) {
-      y <- to_flextable(x, lpp = t_lpp, ppt_height = height, ppt_width = width, ...)
+      tf <- resolve_format(x, autoslider_format)
+      footer_pt <- slide_fs(x)$footer
+      y <- call_ft(x, list(
+        lpp = t_lpp, ppt_height = height, ppt_width = width, table_format = tf
+      ))
       for (tt in y) {
-        table_to_slide(ppt,
-          content = tt,
+        call_slide(tt, list(
           table_loc = center_gts_table_loc(tt$ft, ppt_width = width, ppt_height = height),
-          ...
-        )
+          footer_font_size = footer_pt
+        ))
       }
     } else if (inherits(x, "gtsummary") || inherits(x, "tbl_roche_summary")) {
-      y <- to_flextable(x, ...)
-      table_to_slide(ppt, content = y, decor = FALSE, ...)
+      tf <- resolve_format(x, autoslider_format)
+      y <- call_ft(x, list(table_format = tf))
+      call_slide(y, list(decor = FALSE))
     } else {
       if (any(class(x) %in% c("decoratedGrob", "decoratedGrobSet", "ggplot"))) {
         if (inherits(x, "ggplot")) {
@@ -258,10 +324,13 @@ get_proper_title <- function(title, max_char = 60, title_color = "#1C2B39") {
 #' @param usernotes User notes
 #' @param decor Should table be decorated
 #' @param layout layout from theme
+#' @param footer_font_size Optional point size for the footnote text. `NULL`
+#'   keeps the existing footnote size set on the flextable.
 #' @param ... additional arguments
 #' @return Slide with added content
 table_to_slide <- function(ppt, content, decor = TRUE, layout = "Title and Content",
-                           table_loc = ph_location_type("body"), usernotes = "", ...) {
+                           table_loc = ph_location_type("body"), usernotes = "",
+                           footer_font_size = NULL, ...) {
   layt_summary <- layout_summary(ppt)
   assertthat::assert_that(layout %in% layt_summary$layout)
   ppt_master <- layt_summary$master[1]
@@ -277,9 +346,14 @@ table_to_slide <- function(ppt, content, decor = TRUE, layout = "Title and Conte
     }
     # print(content_footnotes)
     if (content$footnotes != "") {
+      footnote_value <- if (!is.null(footer_font_size)) {
+        as_paragraph(as_chunk(content$footnotes, props = fp_text(font.size = footer_font_size)))
+      } else {
+        as_paragraph(content$footnotes)
+      }
       out <- footnote(out,
         i = 1, j = 1,
-        value = as_paragraph(content$footnotes),
+        value = footnote_value,
         ref_symbols = " ", part = "header", inline = TRUE
       )
     }

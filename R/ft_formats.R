@@ -26,7 +26,8 @@ autoslider_format <- function(ft,
                               even_body = "#D0E4F2", # "slategray1" # slategray1,
                               font_name = "arial",
                               body_font_size = 12,
-                              header_font_size = 14) {
+                              header_font_size = 14,
+                              footer_font_size = body_font_size) {
   ft %>%
     theme_zebra(
       odd_header = odd_header,
@@ -38,6 +39,7 @@ autoslider_format <- function(ft,
     fontsize(size = body_font_size, part = "body") %>%
     color(color = "white", part = "header") %>%
     fontsize(size = header_font_size, part = "header") %>%
+    fontsize(size = footer_font_size, part = "footer") %>%
     bold(part = "header")
 }
 
@@ -139,14 +141,68 @@ autoslider_dose_format <- function(ft, header_vals = names(ft$body$dataset)) {
 #' @param ... arguments passed to program
 #'
 #' @export
-black_format_tb <- function(ft, body_font_size = 8, header_font_size = 8, ...) {
+black_format_tb <- function(ft, body_font_size = 8, header_font_size = 8,
+                            footer_font_size = body_font_size, ...) {
   ft %>%
     theme_booktabs() %>%
     fontsize(size = body_font_size, part = "body") %>%
     fontsize(size = header_font_size, part = "header") %>%
+    fontsize(size = footer_font_size, part = "footer") %>%
     bold(part = "header") %>%
     color(color = "blue", part = "header") %>%
     border_inner_h(part = "all", border = fp_border(color = "black")) %>%
     hline_top(part = "all", border = fp_border(color = "black", width = 2)) %>%
     hline_bottom(part = "all", border = fp_border(color = "black", width = 2))
+}
+
+#' Wrap a table formatter so it applies fixed font sizes
+#'
+#' @description
+#' Returns a new table-format function that behaves like `table_format` but with
+#' the supplied font sizes injected. This is the generic mechanism used by
+#' [generate_slides()] to honor per-slide `font_size` settings declared in the
+#' spec: a single `table_format` symbol can carry body/header/footer sizes.
+#'
+#' Sizes are only forwarded to arguments the underlying formatter actually
+#' declares. A formatter with an explicit `body_font_size`/`header_font_size`/
+#' `footer_font_size` argument (or a `...`) receives the corresponding size;
+#' sizes a formatter cannot accept are dropped rather than raising an
+#' "unused argument" error. When no sizes are supplied the original formatter is
+#' returned unchanged.
+#'
+#' @param table_format A function taking a flextable as its first argument and
+#'   returning a flextable (e.g. [autoslider_format()], [black_format_tb()]).
+#' @param body_font_size,header_font_size,footer_font_size Point sizes. `NULL`
+#'   (the default) leaves that part to the underlying formatter default.
+#'
+#' @return A function `function(ft, ...)` returning a styled flextable.
+#' @export
+#'
+#' @examples
+#' small <- with_font_sizes(black_format_tb, body_font_size = 6, header_font_size = 6)
+#' ft <- flextable::flextable(head(mtcars))
+#' small(ft)
+with_font_sizes <- function(table_format,
+                            body_font_size = NULL,
+                            header_font_size = NULL,
+                            footer_font_size = NULL) {
+  force(table_format)
+  sizes <- Filter(Negate(is.null), list(
+    body_font_size = body_font_size,
+    header_font_size = header_font_size,
+    footer_font_size = footer_font_size
+  ))
+  if (length(sizes) == 0) {
+    return(table_format)
+  }
+
+  function(ft, ...) {
+    fmls <- formalArgs(table_format)
+    keep <- if (is.null(fmls) || "..." %in% fmls) {
+      sizes
+    } else {
+      sizes[names(sizes) %in% fmls]
+    }
+    do.call(table_format, c(list(ft = ft), keep))
+  }
 }

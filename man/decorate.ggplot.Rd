@@ -4,7 +4,15 @@
 \alias{decorate.ggplot}
 \title{Decorate ggplot object}
 \usage{
-\method{decorate}{ggplot}(x, titles = "", footnotes = "", paper = "L11", for_test = FALSE, ...)
+\method{decorate}{ggplot}(
+  x,
+  titles = "",
+  footnotes = "",
+  paper = "L11",
+  for_test = FALSE,
+  metadata = NULL,
+  ...
+)
 }
 \arguments{
 \item{x}{An object to decorate}
@@ -16,6 +24,9 @@
 \item{paper}{Paper size, by default "L11"}
 
 \item{for_test}{`logic` CICD parameter}
+
+\item{metadata}{Named `list` (or `NULL`) of token values used to substitute
+`{token}` placeholders in `titles`/`footnotes`. See [apply_tokens()].}
 
 \item{...}{additional arguments. not used.}
 }

@@ -1,4 +1,4 @@
-# autoslider.core 0.3.3.9000
+# autoslider.core 0.3.3.9001
 
  * Per-slide font sizes: `generate_slides()` now reads an optional `font_size:`
    block (`body`/`header`/`footer`) and `table_format` from each output's spec

@@ -4,10 +4,10 @@
 \alias{apply_tokens}
 \title{Substitute metadata tokens in text}
 \usage{
-apply_tokens(x, metadata = NULL)
+apply_tokens(text, metadata = NULL)
 }
 \arguments{
-\item{x}{`character` vector possibly containing `{token}` placeholders.}
+\item{text}{`character` vector possibly containing `{token}` placeholders.}
 
 \item{metadata}{Named `list` (or `NULL`) supplying token values. Typically the
 spec entry produced by [read_spec()], into which the `metadata` argument has
@@ -26,7 +26,8 @@ and placeholder slides without editing the deck or the spec text directly.
 \details{
 Token values are looked up first in `metadata`, then in the calling environment
 (preserving the existing `glue` behavior used across `decorate` methods).
-A `{token}` that resolves to neither raises an error, so typos are caught early.
+A `{token}` that resolves to neither raises an informative error, so typos are
+caught early rather than silently producing a broken slide.
 }
 \examples{
 apply_tokens("Demographics - Study {study}", list(study = "BP12345"))

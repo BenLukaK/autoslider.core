@@ -52,11 +52,13 @@ decorate.tbl_roche_summary <- function(x, ...) {
 #' @param footnotes Footnote to be added to the table
 #' @param paper Orientation and font size as string, e.g. "P8"; "L11"
 #' @param for_test `logic` CICD parameter
+#' @param metadata Named `list` (or `NULL`) of token values used to substitute
+#'   `{token}` placeholders in `titles`/`footnotes`. See [apply_tokens()].
 #' @param ... Additional arguments passed to the decoration function.
 #' @return No return value, called for side effects
 #' @method decorate VTableTree
 #' @export
-decorate.VTableTree <- function(x, titles = "", footnotes = "", paper = "P8", for_test = FALSE, ...) {
+decorate.VTableTree <- function(x, titles = "", footnotes = "", paper = "P8", for_test = FALSE, metadata = NULL, ...) {
   width_set <- attr(x, "width")
   tmp_x <- formatters::matrix_form(x)
 
@@ -66,11 +68,11 @@ decorate.VTableTree <- function(x, titles = "", footnotes = "", paper = "P8", fo
     width <- ifelse(is.na(width_set), formatters::propose_column_widths(tmp_x), width_set)
   }
 
-  glued_title <- glue::glue(paste(titles, collapse = "\n"))
+  glued_title <- apply_tokens(titles, metadata)
   main_title(x) <- glued_title
 
   git_fn <- git_footnote(for_test)
-  glued_footnotes <- glue::glue(paste(c(footnotes, git_fn), collapse = "\n"))
+  glued_footnotes <- apply_tokens(c(footnotes, git_fn), metadata)
   main_footer(x) <- glued_footnotes
 
   new(
@@ -92,18 +94,20 @@ decorate.VTableTree <- function(x, titles = "", footnotes = "", paper = "P8", fo
 #' @param footnotes Plot footnotes
 #' @param paper Paper size, by default "L11"
 #' @param for_test `logic` CICD parameter
+#' @param metadata Named `list` (or `NULL`) of token values used to substitute
+#'   `{token}` placeholders in `titles`/`footnotes`. See [apply_tokens()].
 #' @param ... additional arguments. not used.
 #' @return No return value, called for side effects
 #' @export
 #' @details
 #' The paper default paper size, `L11`, indicate that the fontsize is 11.
 #' The fontsize of the footnotes, is the fontsize of the titles minus 2.
-decorate.ggplot <- function(x, titles = "", footnotes = "", paper = "L11", for_test = FALSE, ...) {
-  glued_title <- glue::glue(paste(titles, collapse = "\n"))
+decorate.ggplot <- function(x, titles = "", footnotes = "", paper = "L11", for_test = FALSE, metadata = NULL, ...) {
+  glued_title <- apply_tokens(titles, metadata)
   # main_title(x) <- glued_title
 
   git_fn <- git_footnote(for_test)
-  glued_footnotes <- glue::glue(paste(c(footnotes, git_fn), collapse = "\n"))
+  glued_footnotes <- apply_tokens(c(footnotes, git_fn), metadata)
   # main_footer(x) <- glued_footnotes
 
   ret <- list(
@@ -126,11 +130,13 @@ decorate.ggplot <- function(x, titles = "", footnotes = "", paper = "L11", for_t
 #' @param footnotes Footnote to be added to the table
 #' @param paper Orientation and font size as string, e.g. "P8"; "L11"
 #' @param for_test `logic` CICD parameter
+#' @param metadata Named `list` (or `NULL`) of token values used to substitute
+#'   `{token}` placeholders in `titles`/`footnotes`. See [apply_tokens()].
 #' @param ... Additional arguments. not used.
 #' @return No return value, called for side effects
 #' @method decorate listing_df
 #' @export
-decorate.listing_df <- function(x, titles = "", footnotes = "", paper = "P8", for_test = FALSE, ...) {
+decorate.listing_df <- function(x, titles = "", footnotes = "", paper = "P8", for_test = FALSE, metadata = NULL, ...) {
   width_set <- attr(x, "width")
   tmp_x <- formatters::matrix_form(x)
 
@@ -140,11 +146,11 @@ decorate.listing_df <- function(x, titles = "", footnotes = "", paper = "P8", fo
     width <- ifelse(is.na(width_set), formatters::propose_column_widths(tmp_x), width_set)
   }
 
-  glued_title <- glue::glue(paste(titles, collapse = "\n"))
+  glued_title <- apply_tokens(titles, metadata)
   main_title(x) <- glued_title
 
   git_fn <- git_footnote(for_test)
-  glued_footnotes <- glue::glue(paste(c(footnotes, git_fn), collapse = "\n"))
+  glued_footnotes <- apply_tokens(c(footnotes, git_fn), metadata)
   main_footer(x) <- glued_footnotes
   new(
     "dlisting",
@@ -166,6 +172,8 @@ decorate.listing_df <- function(x, titles = "", footnotes = "", paper = "P8", fo
 #' @param footnotes graph footnotes
 #' @param paper paper size. default is "L8".
 #' @param for_test `logic` CICD parameter
+#' @param metadata Named `list` (or `NULL`) of token values used to substitute
+#'   `{token}` placeholders in `titles`/`footnotes`. See [apply_tokens()].
 #' @param ... Additional arguments. not used.
 #' @return No return value, called for side effects
 #' @details
@@ -174,12 +182,12 @@ decorate.listing_df <- function(x, titles = "", footnotes = "", paper = "P8", fo
 #' @export
 #'
 decorate.grob <-
-  function(x, titles = "", footnotes = "", paper = "L11", for_test = FALSE, ...) {
+  function(x, titles = "", footnotes = "", paper = "L11", for_test = FALSE, metadata = NULL, ...) {
     size <- fs(paper)
     grob <- tern::decorate_grob(
       grob = x,
-      titles = glue::glue(paste(titles, collapse = "\n")),
-      footnotes = c(glue::glue(paste(footnotes, collapse = "\n")), git_footnote(for_test), datetime()),
+      titles = apply_tokens(titles, metadata),
+      footnotes = c(apply_tokens(footnotes, metadata), git_footnote(for_test), datetime()),
       border = FALSE,
       gp_titles = gpar(fontsize = size$fontsize),
       gp_footnotes = gpar(fontsize = size$fontsize - 2)
@@ -195,6 +203,8 @@ decorate.grob <-
 #' @param footnotes graph footnotes
 #' @param paper paper size. default is "L8".
 #' @param for_test `logic` CICD parameter
+#' @param metadata Named `list` (or `NULL`) of token values used to substitute
+#'   `{token}` placeholders in `titles`/`footnotes`. See [apply_tokens()].
 #' @param ... Additional arguments. not used.
 #' @return No return value, called for side effects
 #' @details
@@ -203,9 +213,9 @@ decorate.grob <-
 #' @method decorate gtsummary
 #' @export
 decorate.gtsummary <-
-  function(x, titles = "", footnotes = "", paper = "L11", for_test = FALSE, ...) {
+  function(x, titles = "", footnotes = "", paper = "L11", for_test = FALSE, metadata = NULL, ...) {
     size <- fs(paper)
-    glued_title <- glue::glue(paste(titles, collapse = "\n"))
+    glued_title <- apply_tokens(titles, metadata)
     x <- x |> modify_caption(caption = "")
     structure(
       .Data = x,
@@ -223,6 +233,8 @@ decorate.gtsummary <-
 #' @param footnotes graph footnotes
 #' @param paper paper size. default is "L11".
 #' @param for_test `logic` CICD parameter
+#' @param metadata Named `list` (or `NULL`) of token values used to substitute
+#'   `{token}` placeholders in `titles`/`footnotes`. See [apply_tokens()].
 #' @param ... additional arguments. not used
 #' @details
 #' The paper default paper size, `L11`, indicate that the fontsize is 11.
@@ -231,7 +243,7 @@ decorate.gtsummary <-
 #' @export
 #'
 decorate.list <-
-  function(x, titles, footnotes, paper = "L11", for_test = FALSE, ...) {
+  function(x, titles, footnotes, paper = "L11", for_test = FALSE, metadata = NULL, ...) {
     stopifnot(all(vapply(x, function(x) {
       "grob" %in% class(x) || "ggplot" %in% class(x)
     }, FUN.VALUE = TRUE)))
@@ -245,8 +257,8 @@ decorate.list <-
     })
     grobs <- decorate_grob_set(
       grobs = x,
-      titles = glue::glue(paste(titles, collapse = "\n")),
-      footnotes = c(glue::glue(paste(footnotes, collapse = "\n")), git_footnote(for_test), datetime()),
+      titles = apply_tokens(titles, metadata),
+      footnotes = c(apply_tokens(footnotes, metadata), git_footnote(for_test), datetime()),
       border = FALSE,
       gp_titles = gpar(fontsize = size$fontsize),
       gp_footnotes = gpar(fontsize = size$fontsize - 2)
@@ -331,9 +343,9 @@ decorate_outputs <- function(outputs,
     }
 
     if ("ggplot" %in% class(output)) {
-      decorate.ggplot(output, titles = full_title)
+      decorate.ggplot(output, titles = full_title, metadata = spec)
     } else if ("grob" %in% class(output)) {
-      decorate.grob(output)
+      decorate.grob(output, metadata = spec)
     } else {
       structure(
         .Data = decorate(
@@ -341,7 +353,8 @@ decorate_outputs <- function(outputs,
           title = c(full_title, generic_title),
           footnotes = c(spec$footnotes, generic_footnote),
           paper = spec$paper,
-          for_test = for_test
+          for_test = for_test,
+          metadata = spec
         ),
         spec = modifyList(spec, list(titles = glue::glue(paste0(c(full_title, generic_title), collapse = "\n"))))
       )

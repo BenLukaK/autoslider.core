@@ -21,8 +21,16 @@ test_that("apply_tokens returns the input unchanged for zero-length input", {
   expect_equal(apply_tokens(character(0), list(study = "BP12345")), character(0))
 })
 
-test_that("apply_tokens errors on an unknown token", {
-  expect_error(apply_tokens("Study {missing}", list(study = "BP12345")))
+test_that("apply_tokens errors informatively on an unknown token", {
+  expect_error(
+    apply_tokens("Study {missing}", list(study = "BP12345")),
+    "Failed to substitute metadata tokens"
+  )
+})
+
+test_that("apply_tokens validates its arguments", {
+  expect_error(apply_tokens(42L, list(study = "BP12345")), "character")
+  expect_error(apply_tokens("Study {study}", metadata = "not-a-list"), "list")
 })
 
 test_that("apply_tokens falls back to the calling environment when metadata lacks the token", {

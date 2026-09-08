@@ -1,4 +1,4 @@
-# autoslider.core 0.3.3.9000
+# autoslider.core 0.3.3.9001
 
  * Added `apply_tokens()` to substitute `{token}` placeholders (e.g. `{study}`) in titles, footnotes and placeholder slides with values from a user-controlled `metadata` list, so study-level text can be driven from metadata instead of edited in the deck.
 

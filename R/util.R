@@ -521,7 +521,7 @@ lyt_to_side_by_side <- function(lyt, anl, side_by_side = NULL) {
       result <- cbind_rtables(result, build_table(lyt = lyt, df = tmp_anl))
     }
   }
-  return(result)
+  result
 }
 
 #' Build side by side layout by cbind
@@ -563,7 +563,7 @@ lyt_to_side_by_side_two_data <- function(lyt, anl, alt_counts_df, side_by_side =
       ))
     }
   }
-  return(result)
+  result
 }
 
 

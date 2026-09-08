@@ -17,6 +17,7 @@ NULL
 #' @param font_name Font name, default to arial
 #' @param body_font_size Font size of the table content, default to 12
 #' @param header_font_size Font size of the table header, default to 14
+#' @param footer_font_size Font size of the table footer, defaults to `body_font_size`
 #' @return A flextable with applied theme.
 #' @export
 autoslider_format <- function(ft,

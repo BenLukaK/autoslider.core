@@ -57,6 +57,8 @@ black_format_tb(
 
 \item{header_font_size}{Font size of the table header, default to 14}
 
+\item{footer_font_size}{Font size of the table footer, defaults to `body_font_size`}
+
 \item{...}{arguments passed to program}
 
 \item{header_vals}{Header}

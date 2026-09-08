@@ -6,6 +6,8 @@
    section at the end -- instead of hidden speaker notes. `get_ai_story()` and
    `add_story_slides()` expose the LLM call and the (network-free) slide insertion
    separately. `get_ellmer_chat()` now also supports the `"anthropic"` platform.
+   `get_ai_story()` falls back to plain-text JSON mode for providers that do not
+   support native structured output (e.g. DeepSeek).
 
 # autoslider.core 0.3.3
 

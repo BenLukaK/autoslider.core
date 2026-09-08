@@ -101,6 +101,43 @@ build_story_prompt <- function(outputs, allowed_layouts, max_slides = 4L) {
   )
 }
 
+#' Fallback: get the story as plain-text JSON and parse it
+#'
+#' Used when a provider does not support `chat$chat_structured()`. Asks the model
+#' to reply with a bare JSON object matching the story schema, strips any
+#' reasoning block or markdown fence, extracts the outermost JSON object and
+#' parses it. Returns a `list(summary, conclusions)`; missing sections default to
+#' empty lists.
+#'
+#' @param chat An `ellmer` chat object.
+#' @param prompt The deck-level story prompt (see [build_story_prompt()]).
+#' @param allowed_layouts Character vector of permitted layouts (named in the
+#'   JSON instruction so the model stays in range).
+#'
+#' @return A `list` with `summary` and `conclusions` elements.
+#'
+#' @noRd
+story_via_json <- function(chat, prompt, allowed_layouts) {
+  instruction <- paste0(
+    prompt, "\n\n",
+    "Respond with ONLY a JSON object (no markdown fences, no commentary) of the form:\n",
+    '{"summary":[{"layout":"<one of: ', paste(allowed_layouts, collapse = " | "),
+    '>","title":"a short title","bullets":["a bullet","another bullet"]}],',
+    '"conclusions":[{"layout":"...","title":"...","bullets":["..."]}]}'
+  )
+  raw <- chat$chat(instruction, echo = "none")
+  txt <- sub(".*?</think>\\s*", "", raw) # drop <think>...</think> reasoning blocks
+  match <- regmatches(txt, regexpr("(?s)\\{.*\\}", txt, perl = TRUE))
+  if (length(match) == 1L) {
+    txt <- match
+  }
+  parsed <- jsonlite::fromJSON(txt, simplifyDataFrame = FALSE)
+  list(
+    summary = if (is.null(parsed$summary)) list() else parsed$summary,
+    conclusions = if (is.null(parsed$conclusions)) list() else parsed$conclusions
+  )
+}
+
 #' Ask an LLM to tell the story of the decorated outputs
 #'
 #' Sends the deck's tables to the chosen LLM provider and returns a structured
@@ -151,25 +188,44 @@ get_ai_story <- function(outputs,
   )
 
   prompt <- build_story_prompt(outputs, allowed_layouts, max_slides)
-  story <- chat$chat_structured(prompt, type = story_type)
 
-  # Clamp any layout the model invented back into the allowed set so
-  # `add_story_slides()` can always find a matching template layout.
+  # Prefer the provider's native structured output. Not every provider supports
+  # it (e.g. DeepSeek returns HTTP 400 for the request `ellmer` emits), so fall
+  # back to plain-text JSON mode and parse the response ourselves.
+  story <- tryCatch(
+    chat$chat_structured(prompt, type = story_type),
+    error = function(e) story_via_json(chat, prompt, allowed_layouts)
+  )
+
+  # Coerce every slide into a clean `list(layout, title, bullets)` regardless of
+  # which path produced it, clamping any layout the model invented back into the
+  # allowed set so `add_story_slides()` can always find a matching layout.
   clamp <- function(slides) {
+    if (is.null(slides)) {
+      return(list())
+    }
     lapply(slides, function(s) {
-      if (is.null(s$layout) || !(s$layout %in% allowed_layouts)) {
-        s$layout <- "Title and Content"
+      layout <- if (is.null(s$layout)) "" else as.character(s$layout)[1]
+      if (!(layout %in% allowed_layouts)) {
+        layout <- "Title and Content"
       }
-      if (is.null(s$bullets)) {
-        s$bullets <- character(0)
-      }
-      s
+      list(
+        layout = layout,
+        title = if (is.null(s$title)) "" else as.character(s$title)[1],
+        bullets = if (is.null(s$bullets)) character(0) else as.character(unlist(s$bullets))
+      )
     })
   }
 
+  # Drop slides the model left empty (no title and no bullets) so the deck has
+  # no blank inserts.
+  drop_empty <- function(slides) {
+    Filter(function(s) nzchar(s$title) || length(s$bullets) > 0, slides)
+  }
+
   list(
-    summary = clamp(story$summary),
-    conclusions = clamp(story$conclusions)
+    summary = drop_empty(clamp(story$summary)),
+    conclusions = drop_empty(clamp(story$conclusions))
   )
 }
 

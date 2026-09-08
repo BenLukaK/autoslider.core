@@ -117,6 +117,29 @@ test_that("add_story_slides tolerates empty sections", {
   expect_equal(length(autoslider.core:::add_story_slides(ppt, list())), n0)
 })
 
+test_that("story_via_json parses a JSON reply, stripping reasoning and fences", {
+  # Stub chat: mimics a provider (e.g. DeepSeek/ollama) that has no native
+  # structured output and returns JSON wrapped in a <think> block and a fence,
+  # with a little prose around it.
+  fake_chat <- list(
+    chat = function(prompt, echo = NULL) {
+      paste0(
+        "<think>the user wants slides</think>\n",
+        "Here you go:\n```json\n",
+        '{"summary":[{"layout":"Section Header","title":"S","bullets":[]}],',
+        '"conclusions":[{"layout":"Title and Content","title":"C","bullets":["x","y"]}]}',
+        "\n```\nHope that helps!"
+      )
+    }
+  )
+  res <- autoslider.core:::story_via_json(
+    fake_chat, "PROMPT", c("Section Header", "Title and Content")
+  )
+  expect_named(res, c("summary", "conclusions"))
+  expect_equal(res$summary[[1]]$title, "S")
+  expect_equal(res$conclusions[[1]]$bullets, c("x", "y"))
+})
+
 test_that("add_ai_story validates its inputs before any network call", {
   expect_error(
     add_ai_story(outputs = "not a list", infile = tempfile(fileext = ".pptx")),

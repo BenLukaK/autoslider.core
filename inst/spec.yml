@@ -1,3 +1,16 @@
+# ---------------------------------------------------------------------------
+# Metadata tokens
+#
+# Any {token} in a `titles` or `footnotes` field below is replaced during
+# decoration with the matching value from the `metadata` list passed to
+# read_spec(), e.g.:
+#
+#   read_spec("spec.yml", metadata = list(study = "BP12345"))
+#
+# turns a title of "Demographics - Study {study}" into
+# "Demographics - Study BP12345". Unknown tokens raise an error.
+# See ?read_spec, ?apply_tokens and the generate_placeholder_slides vignette.
+# ---------------------------------------------------------------------------
 - program: l_dsl01_slide
   titles: Analysis Sets ({filter_titles("adsl")})
   footnotes: 'Analysis Sets footer'

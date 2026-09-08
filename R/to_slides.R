@@ -416,7 +416,7 @@ ph_with_img <- function(ppt, figure, fig_width, fig_height, figure_loc) {
   on.exit(unlink(file_name))
   ext_img <- external_img(file_name, width = fig_width, height = fig_height)
 
-  ppt |> ph_with(value = ext_img, location = figure_loc, use_loc_size = FALSE)
+  ppt %>% ph_with(value = ext_img, location = figure_loc, use_loc_size = FALSE)
 }
 
 #' Add figure to slides

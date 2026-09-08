@@ -77,15 +77,15 @@ to_flextable.Ddataframe <- function(x, lpp, table_format = table_format, ...) {
   #     apply_theme()
   # }
 
-  ft <- ft |>
-    align_text_col(align = "center", header = TRUE) |>
-    align(i = seq_len(nrow(df)), j = 1, align = "left") |> # row names align to left
-    border(border = fp_border(color = border_color, width = 1), part = "all") |>
-    padding(padding.top = 3, padding.bottom = 3, part = "all") |>
-    autofit(add_h = 0) |>
+  ft <- ft %>%
+    align_text_col(align = "center", header = TRUE) %>%
+    align(i = seq_len(nrow(df)), j = 1, align = "left") %>% # row names align to left
+    border(border = fp_border(color = border_color, width = 1), part = "all") %>%
+    padding(padding.top = 3, padding.bottom = 3, part = "all") %>%
+    autofit(add_h = 0) %>%
     table_format()
 
-  ft <- ft |>
+  ft <- ft %>%
     width(width = c(
       dim(ft)$widths[1],
       dim(ft)$widths[-1] - dim(ft)$widths[-1] + sum(dim(ft)$widths[-1]) / (ncol(df) - 1)
@@ -93,7 +93,7 @@ to_flextable.Ddataframe <- function(x, lpp, table_format = table_format, ...) {
 
   if (flextable_dim(ft)$widths > 10) {
     pgwidth <- 10.5
-    ft <- ft |>
+    ft <- ft %>%
       width(width = dim(ft)$widths * pgwidth / flextable_dim(ft)$widths)
     # adjust width of each column as percentage of total width
   }
@@ -107,7 +107,7 @@ to_flextable.Ddataframe <- function(x, lpp, table_format = table_format, ...) {
 #' @param ... additional arguments, not used
 #' @export
 to_flextable.gtsummary <- function(x, table_format = autoslider_format, ...) {
-  gtsummary::as_flex_table(x) |> table_format()
+  gtsummary::as_flex_table(x) %>% table_format()
 }
 
 #' convert tbl_roche_summary (NEST 2 gtsummary subclass) to flextable
@@ -134,7 +134,7 @@ to_flextable.tbl_roche_summary <- function(x, ...) {
 #' @export
 to_flextable.dgtsummary <- function(x, lpp = 20, ppt_height = NULL, ppt_width = NULL,
                                     table_format = autoslider_format, ...) {
-  ft_full <- gtsummary::as_flex_table(x) |> table_format()
+  ft_full <- gtsummary::as_flex_table(x) %>% table_format()
 
   # Scale columns to fit slide width
   if (!is.null(ppt_width)) {
@@ -187,8 +187,8 @@ to_flextable.data.frame <- function(x, col_width = NULL, table_format = orange_f
   ft <- do_call(flextable, data = df, ...)
 
   if (dose_template) {
-    ft <- ft |>
-      autofit() |>
+    ft <- ft %>%
+      autofit() %>%
       fit_to_width(10)
   } else {
     if (all(is.na(formatters::var_labels(df)))) {
@@ -196,23 +196,23 @@ to_flextable.data.frame <- function(x, col_width = NULL, table_format = orange_f
     }
 
     ft <- set_header_labels(ft, values = as.list(formatters::var_labels(df)))
-    ft <- ft |> width(width = col_width)
+    ft <- ft %>% width(width = col_width)
     if (flextable_dim(ft)$widths > 10) {
       pgwidth <- 10.5
-      ft <- ft |>
+      ft <- ft %>%
         width(width = dim(ft)$widths * pgwidth / flextable_dim(ft)$widths)
       # adjust width of each column as percentage of total width
     }
   }
 
-  ft <- ft |>
+  ft <- ft %>%
     table_format(...)
 
   # font_size, when supplied, forces a uniform size across the whole table and
   # therefore overrides any sizing done by `table_format`. Left NULL by default
   # so per-slide font sizes injected into `table_format` are preserved.
   if (!is.null(font_size)) {
-    ft <- ft |> fontsize(size = font_size, part = "all")
+    ft <- ft %>% fontsize(size = font_size, part = "all")
   }
   ft
 }
@@ -341,27 +341,27 @@ to_flextable.VTableTree <- function(x, table_format = orange_format, ...) {
   #   header_df <- header_df[non_total_coln]
   # }
   ft <- do_call(flextable, data = df, ...)
-  ft <- ft |>
-    delete_part(part = "header") |>
+  ft <- ft %>%
+    delete_part(part = "header") %>%
     add_header(values = header_df)
 
   # if(!is.null(apply_theme)){
-  #   ft <- ft |>
+  #   ft <- ft %>%
   #     apply_theme()
   # }
 
   ft <- do_call(table_format, ft = ft, ...)
-  ft <- ft |>
-    merge_at_indice(lst = get_merge_index(mf$spans[(nr_header + 1):nrow(mf$spans), , drop = FALSE]), part = "body") |>
-    merge_at_indice(lst = get_merge_index(mf$spans[1:nr_header, , drop = FALSE]), part = "header") |>
-    align_text_col(align = "center", header = TRUE) |>
-    align(i = seq_len(nrow(tbl)), j = 1, align = "left") |> # row names align to left
-    padding_lst(mf$row_info$indent) |>
-    padding(padding.top = 3, padding.bottom = 3, part = "all") |>
+  ft <- ft %>%
+    merge_at_indice(lst = get_merge_index(mf$spans[(nr_header + 1):nrow(mf$spans), , drop = FALSE]), part = "body") %>%
+    merge_at_indice(lst = get_merge_index(mf$spans[1:nr_header, , drop = FALSE]), part = "header") %>%
+    align_text_col(align = "center", header = TRUE) %>%
+    align(i = seq_len(nrow(tbl)), j = 1, align = "left") %>% # row names align to left
+    padding_lst(mf$row_info$indent) %>%
+    padding(padding.top = 3, padding.bottom = 3, part = "all") %>%
     autofit(add_h = 0)
 
 
-  ft <- ft |>
+  ft <- ft %>%
     width(width = c(
       dim(ft)$widths[1],
       dim(ft)$widths[-1] - dim(ft)$widths[-1] + sum(dim(ft)$widths[-1]) / (ncol(mf$strings) - 1)
@@ -369,7 +369,7 @@ to_flextable.VTableTree <- function(x, table_format = orange_format, ...) {
 
   if (flextable_dim(ft)$widths > 10) {
     pgwidth <- 10.5
-    ft <- ft |>
+    ft <- ft %>%
       width(width = dim(ft)$widths * pgwidth / flextable_dim(ft)$widths)
     # adjust width of each column as percentage of total width
   }

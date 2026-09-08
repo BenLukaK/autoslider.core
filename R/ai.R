@@ -51,6 +51,15 @@ get_ellmer_chat <- function(platform = "deepseek",
       base_url = base_url,
       model = model
     )
+  } else if (platform == "anthropic") {
+    if (is.null(api_key) || !nzchar(api_key)) {
+      api_key <- Sys.getenv("ANTHROPIC_API_KEY")
+    }
+    chat <- ellmer::chat_anthropic(
+      system_prompt = get_system_prompt(),
+      api_key = api_key,
+      model = model
+    )
   }
 
   return(chat)

@@ -1,5 +1,12 @@
 # autoslider.core 0.3.3.9000
 
+ * Added `add_ai_story()` (and an `add_ai_story` MCP tool): a post-processing step
+   that reads a generated `.pptx`, asks an LLM to tell the story of the tables, and
+   inserts real content slides -- a summary section at the front and a conclusions
+   section at the end -- instead of hidden speaker notes. `get_ai_story()` and
+   `add_story_slides()` expose the LLM call and the (network-free) slide insertion
+   separately. `get_ellmer_chat()` now also supports the `"anthropic"` platform.
+
 # autoslider.core 0.3.3
 
  * Adding mcp server.

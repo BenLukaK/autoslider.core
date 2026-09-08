@@ -193,6 +193,54 @@ fn_add_ai_notes <- function(api_key, model, prompt_path, provider, base_url) {
   sprintf("AI notes added to %d output(s): %s", length(noted), paste(noted, collapse = ", "))
 }
 
+fn_add_ai_story <- function(provider, model, api_key, base_url, infile, outfile, max_slides) {
+  require_outputs()
+  stop_if(!nzchar(infile) || !file.exists(infile), "infile must be an existing .pptx (call generate_slides first).")
+  if (!nzchar(outfile)) outfile <- infile
+
+  provider <- tolower(trimws(provider))
+  if (!provider %in% c("anthropic", "ollama", "openai", "deepseek")) {
+    stop(sprintf(
+      "Unknown provider '%s'. Choose one of: anthropic, ollama, openai, deepseek",
+      provider
+    ), call. = FALSE)
+  }
+
+  # Resolve provider-specific defaults, mirroring add_ai_notes, then delegate to
+  # add_ai_story() which builds the chat via get_ellmer_chat(platform, ...).
+  url <- base_url
+  if (provider == "anthropic") {
+    if (!nzchar(api_key)) api_key <- Sys.getenv("ANTHROPIC_API_KEY")
+    stop_if(!nzchar(api_key), "Provide api_key or set ANTHROPIC_API_KEY.")
+  } else if (provider == "openai") {
+    if (!nzchar(api_key)) api_key <- Sys.getenv("OPENAI_API_KEY")
+    stop_if(!nzchar(api_key), "Provide api_key or set OPENAI_API_KEY.")
+  } else if (provider == "deepseek") {
+    if (!nzchar(api_key)) api_key <- Sys.getenv("DEEPSEEK_API_KEY")
+    stop_if(!nzchar(api_key), "Provide api_key or set DEEPSEEK_API_KEY.")
+    if (!nzchar(url)) url <- "https://api.deepseek.com"
+  }
+
+  n_slides <- suppressWarnings(as.integer(max_slides))
+  if (is.na(n_slides) || n_slides < 1) n_slides <- 4L
+
+  outfile <- normalizePath(outfile, mustWork = FALSE)
+  tryCatch(
+    add_ai_story(
+      outputs   = .state$outputs,
+      infile    = infile,
+      outfile   = outfile,
+      platform  = provider,
+      base_url  = url,
+      api_key   = api_key,
+      model     = model,
+      max_slides = n_slides
+    ),
+    error = function(e) stop("AI story error: ", e$message, call. = FALSE)
+  )
+  sprintf("AI story slides added. Deck written to: %s", outfile)
+}
+
 fn_generate_slides <- function(outfile, template) {
   require_outputs()
   if (template == "default") {
@@ -307,6 +355,48 @@ tools <- list(
           'Optional custom base URL. Useful for local Ollama ("http://localhost:11434")',
           'or self-hosted endpoints. Leave empty ("") for provider defaults.'
         )
+      )
+    )
+  ),
+
+  tool(
+    fun = fn_add_ai_story,
+    name = "add_ai_story",
+    description = paste(
+      "Post-process a generated deck: read the .pptx, ask an LLM to tell the story",
+      "of the tables, and insert REAL content slides (title + bullets) -- a summary",
+      "section at the front and a conclusions section at the end. Unlike add_ai_notes",
+      "(which hides text in speaker notes), these slides show in presentation mode.",
+      "Must call run_pipeline and generate_slides first.",
+      "Supported providers: anthropic, ollama, openai, deepseek."
+    ),
+    arguments = list(
+      provider = type_string(
+        'LLM provider: "anthropic", "ollama", "openai", or "deepseek".'
+      ),
+      model = type_string(
+        'Model name for the provider, e.g. "claude-haiku-4-5", "llama3.2", "gpt-4o-mini", "deepseek-chat".'
+      ),
+      api_key = type_string(
+        paste(
+          'API key. Leave empty ("") to read from the provider\'s env var',
+          "(ANTHROPIC_API_KEY, OPENAI_API_KEY, DEEPSEEK_API_KEY). Not required for ollama."
+        )
+      ),
+      base_url = type_string(
+        paste(
+          'Optional custom base URL. Useful for local Ollama ("http://localhost:11434")',
+          'or self-hosted endpoints. Leave empty ("") for provider defaults.'
+        )
+      ),
+      infile = type_string(
+        "Path to the generated .pptx to read (the deck produced by generate_slides)."
+      ),
+      outfile = type_string(
+        'Path to write the augmented deck to. Leave empty ("") to overwrite infile in place.'
+      ),
+      max_slides = type_string(
+        'Maximum slides per section (summary and conclusions). Empty string defaults to 4.'
       )
     )
   ),

@@ -148,8 +148,16 @@ generate_slides <- function(outputs,
     base_fmt <- (sp$table_format) %||% dots$table_format %||% default_fmt
     with_font_sizes(base_fmt, fs$body, fs$header, fs$footer)
   }
+  # Arguments that belong to `table_to_slide()` (slide placement / decoration) but
+  # are not accepted by `to_flextable()` or its formatter helpers. A spec may set
+  # these (e.g. `layout = "08_TitleAndContent"`, `table_loc = ...`); they must reach
+  # `call_slide()` but must be dropped before `to_flextable()`, otherwise they leak
+  # through the formatter's `...` (e.g. `autoslider_format()`) and error with
+  # "unused argument".
+  slide_only_args <- c("decor", "layout", "table_loc", "usernotes", "footer_font_size")
+  fwd_ft <- fwd[setdiff(names(fwd), slide_only_args)]
   call_ft <- function(x, more) {
-    do.call(to_flextable, c(list(x = x), more, fwd))
+    do.call(to_flextable, c(list(x = x), more, fwd_ft))
   }
   call_slide <- function(content, more) {
     do.call(table_to_slide, c(list(ppt = ppt, content = content), more, fwd))

@@ -521,7 +521,7 @@ lyt_to_side_by_side <- function(lyt, anl, side_by_side = NULL) {
       result <- cbind_rtables(result, build_table(lyt = lyt, df = tmp_anl))
     }
   }
-  return(result)
+  result
 }
 
 #' Build side by side layout by cbind
@@ -563,7 +563,7 @@ lyt_to_side_by_side_two_data <- function(lyt, anl, alt_counts_df, side_by_side =
       ))
     }
   }
-  return(result)
+  result
 }
 
 
@@ -571,6 +571,9 @@ do_call <- function(fun, ...) {
   args <- list(...)
   do.call(fun, args[intersect(names(args), formalArgs(fun))])
 }
+
+# Null-coalescing helper (base R gains `%||%` only in 4.4.0; package supports 4.1.0)
+`%||%` <- function(a, b) if (is.null(a)) b else a
 
 
 #' Build table header, a utility function to help with construct structured header for table layout

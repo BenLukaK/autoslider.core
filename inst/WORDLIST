@@ -81,6 +81,7 @@ ellmer
 expr
 flextable
 fontsize
+formatter
 formatters
 ggplot
 github

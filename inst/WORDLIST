@@ -20,6 +20,7 @@ Anthropic
 AutoslideR
 CICD
 CQ
+CodeBuddy
 DOR
 DeepSeek
 EG
@@ -53,6 +54,7 @@ ael
 aesi
 aet
 afun
+ai
 alice
 analytics
 args
@@ -85,6 +87,7 @@ gtsummary
 headerlines
 https
 img
+infile
 insightsengineering
 io
 labelled
@@ -95,6 +98,7 @@ lubridate
 mcp
 mng
 neitmant
+outfile
 ph
 ppt
 pptx

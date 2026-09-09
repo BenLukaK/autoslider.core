@@ -7,7 +7,7 @@ get_portkey_key <- function(filename = "PORTKEY_KEY") {
 }
 
 get_system_prompt <- function(text = "you are a Clinical data scientist expert") {
-  return(text)
+  text
 }
 
 #' Get an `ellmer` chat API with given platform
@@ -51,9 +51,18 @@ get_ellmer_chat <- function(platform = "deepseek",
       base_url = base_url,
       model = model
     )
+  } else if (platform == "anthropic") {
+    if (is.null(api_key) || !nzchar(api_key)) {
+      api_key <- Sys.getenv("ANTHROPIC_API_KEY")
+    }
+    chat <- ellmer::chat_anthropic(
+      system_prompt = get_system_prompt(),
+      api_key = api_key,
+      model = model
+    )
   }
 
-  return(chat)
+  chat
 }
 
 #' Read prompt list from yaml file

@@ -8,7 +8,6 @@
    separately. `get_ellmer_chat()` now also supports the `"anthropic"` platform.
    `get_ai_story()` falls back to plain-text JSON mode for providers that do not
    support native structured output (e.g. DeepSeek).
-
  * Per-slide font sizes: `generate_slides()` now reads an optional `font_size:`
    block (`body`/`header`/`footer`) and `table_format` from each output's spec
    entry, and a deck-wide `font_size` argument. Sizes are applied via the new
@@ -21,6 +20,8 @@
    sizes coming from `table_format` are no longer overwritten. Note: plain
    data-frame slides that previously rendered at the hard-coded 9pt now follow
    the sizes from `table_format` unless `font_size` is supplied.
+ * Added `apply_tokens()` to substitute `{token}` placeholders (e.g. `{study}`) in titles, footnotes and placeholder slides with values from a user-controlled `metadata` list, so study-level text can be driven from metadata instead of edited in the deck.
+ * Added `read_metadata()` and an example `metadata.yml` (`system.file("metadata.yml", package = "autoslider.core")`) so `{token}` values can be kept in a yaml file. `read_spec()` now also accepts a metadata file path for its `metadata` argument and reads it for you, e.g. `read_spec("spec.yml", metadata = "metadata.yml")`.
 
 # autoslider.core 0.3.3
 

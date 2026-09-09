@@ -66,7 +66,7 @@ postprocessing_doc <- function(doc, save_file, doc_o, type = "") {
     print(doc, outfile_final)
   }
 
-  return(doc)
+  doc
 }
 
 
@@ -110,6 +110,8 @@ initialize_doc_original <- function(doc_original, doc_o) {
 #'   the document is initialized from `doc_o`.
 #' @param save_file A logical value. If `TRUE`, the modified document is saved to a file
 #'   after adding the slide.
+#' @param metadata Named `list` (or `NULL`) of token values used to substitute
+#'   `{token}` placeholders in `study_id`. See [apply_tokens()].
 #'
 #' @return An `officer::rpptx` object with the new title slide appended.
 #'
@@ -133,26 +135,29 @@ append_title_slides <- function(
     study_id = "XXXX change me",
     to_page = NA,
     doc_original = NULL,
-    save_file = FALSE) {
+    save_file = FALSE,
+    metadata = NULL) {
   doc_original <- initialize_doc_original(doc_original, doc_o)
 
   to_page <- initialize_to_page(doc_original, to_page)
 
-  doc <- doc_original %>%
-    officer::add_slide(layout = "Title and Content", master = "Office Theme") %>%
+  study_id <- apply_tokens(study_id, metadata)
+
+  doc <- doc_original |>
+    officer::add_slide(layout = "Title and Content", master = "Office Theme") |>
     officer::ph_with(
       value = paste0(study_id, "Meeting"),
       location = officer::ph_location_type(type = "title")
-    ) %>%
+    ) |>
     officer::ph_with(
       value = paste0("meeting"),
       location = officer::ph_location_type(type = "body")
-    ) %>%
+    ) |>
     officer::move_slide(to = to_page)
 
   postprocessing_doc(doc, save_file, doc_o, type = "title")
 
-  return(doc)
+  doc
 }
 
 
@@ -173,6 +178,8 @@ append_title_slides <- function(
 #'   the document is initialized from `doc_o`.
 #' @param save_file A logical value. If `TRUE`, the modified document is saved to a file
 #'   after adding the slide.
+#' @param metadata Named `list` (or `NULL`) of token values used to substitute
+#'   `{token}` placeholders in `section_title`. See [apply_tokens()].
 #'
 #' @return An `officer::rpptx` object with the new section header slide appended.
 #'
@@ -195,22 +202,25 @@ append_section_header_slides <- function(
     section_title = "New Section",
     to_page = NA,
     doc_original = NULL,
-    save_file = FALSE) {
+    save_file = FALSE,
+    metadata = NULL) {
   doc_original <- initialize_doc_original(doc_original, doc_o)
 
   to_page <- initialize_to_page(doc_original, to_page)
 
-  doc <- doc_original %>%
-    officer::add_slide(layout = "Section Header", master = "Office Theme") %>%
+  section_title <- apply_tokens(section_title, metadata)
+
+  doc <- doc_original |>
+    officer::add_slide(layout = "Section Header", master = "Office Theme") |>
     officer::ph_with(
       value = section_title,
       location = officer::ph_location_type(type = "title")
-    ) %>%
+    ) |>
     officer::move_slide(to = to_page)
 
   postprocessing_doc(doc, save_file, doc_o, type = "section_header")
 
-  return(doc)
+  doc
 }
 
 #' Append All Predefined Slides to a PowerPoint Document
@@ -231,6 +241,9 @@ append_section_header_slides <- function(
 #'   the document is initialized from `doc_o`.
 #' @param save_file A logical value. If `TRUE`, the final modified document is saved
 #'   to a file after all slides have been appended.
+#' @param metadata Named `list` (or `NULL`) of token values used to substitute
+#'   `{token}` placeholders in each slide's text (e.g. `study_id`,
+#'   `section_title`). See [apply_tokens()].
 #'
 #' @return An `officer::rpptx` object with all specified slides appended.
 #'
@@ -257,7 +270,8 @@ append_all_slides <- function(
     doc_o,
     page_list = list(), # Default to an empty list
     doc_original = NULL,
-    save_file = FALSE) {
+    save_file = FALSE,
+    metadata = NULL) {
   doc <- initialize_doc_original(doc_original, doc_o)
 
 
@@ -271,7 +285,8 @@ append_all_slides <- function(
         doc_original = doc,
         to_page = current_to_page,
         study_id = page$study_id,
-        save_file = FALSE
+        save_file = FALSE,
+        metadata = metadata
       )
     } else if (page$type == "section") {
       doc <- append_section_header_slides(
@@ -279,12 +294,13 @@ append_all_slides <- function(
         doc_original = doc,
         to_page = current_to_page,
         section_title = page$section_title,
-        save_file = FALSE
+        save_file = FALSE,
+        metadata = metadata
       )
     }
   }
 
   postprocessing_doc(doc, save_file, doc_o, type = "final")
 
-  return(doc)
+  doc
 }

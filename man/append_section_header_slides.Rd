@@ -9,7 +9,8 @@ append_section_header_slides(
   section_title = "New Section",
   to_page = NA,
   doc_original = NULL,
-  save_file = FALSE
+  save_file = FALSE,
+  metadata = NULL
 )
 }
 \arguments{
@@ -27,6 +28,9 @@ the document is initialized from `doc_o`.}
 
 \item{save_file}{A logical value. If `TRUE`, the modified document is saved to a file
 after adding the slide.}
+
+\item{metadata}{Named `list` (or `NULL`) of token values used to substitute
+`{token}` placeholders in `section_title`. See [apply_tokens()].}
 }
 \value{
 An `officer::rpptx` object with the new section header slide appended.

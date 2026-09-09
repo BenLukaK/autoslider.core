@@ -9,7 +9,8 @@ append_title_slides(
   study_id = "XXXX change me",
   to_page = NA,
   doc_original = NULL,
-  save_file = FALSE
+  save_file = FALSE,
+  metadata = NULL
 )
 }
 \arguments{
@@ -25,6 +26,9 @@ the document is initialized from `doc_o`.}
 
 \item{save_file}{A logical value. If `TRUE`, the modified document is saved to a file
 after adding the slide.}
+
+\item{metadata}{Named `list` (or `NULL`) of token values used to substitute
+`{token}` placeholders in `study_id`. See [apply_tokens()].}
 }
 \value{
 An `officer::rpptx` object with the new title slide appended.

@@ -396,7 +396,7 @@ tools <- list(
         'Path to write the augmented deck to. Leave empty ("") to overwrite infile in place.'
       ),
       max_slides = type_string(
-        'Maximum slides per section (summary and conclusions). Empty string defaults to 4.'
+        "Maximum slides per section (summary and conclusions). Empty string defaults to 4."
       )
     )
   ),

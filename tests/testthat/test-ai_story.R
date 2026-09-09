@@ -168,6 +168,7 @@ test_that("get_ai_story end-to-end (requires ANTHROPIC_API_KEY)", {
     max_slides = 2L
   )
   expect_named(story, c("summary", "conclusions"))
-  expect_true(all(vapply(story$summary, function(s) s$layout %in%
-    c("Section Header", "Title and Content", "Title Only"), logical(1))))
+  allowed <- c("Section Header", "Title and Content", "Title Only")
+  in_allowed <- vapply(story$summary, function(s) s$layout %in% allowed, logical(1))
+  expect_true(all(in_allowed))
 })

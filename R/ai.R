@@ -7,7 +7,7 @@ get_portkey_key <- function(filename = "PORTKEY_KEY") {
 }
 
 get_system_prompt <- function(text = "you are a Clinical data scientist expert") {
-  return(text)
+  text
 }
 
 #' Get an `ellmer` chat API with given platform
@@ -62,7 +62,7 @@ get_ellmer_chat <- function(platform = "deepseek",
     )
   }
 
-  return(chat)
+  chat
 }
 
 #' Read prompt list from yaml file

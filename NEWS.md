@@ -11,6 +11,8 @@
 
  * Added `apply_tokens()` to substitute `{token}` placeholders (e.g. `{study}`) in titles, footnotes and placeholder slides with values from a user-controlled `metadata` list, so study-level text can be driven from metadata instead of edited in the deck.
 
+ * Added `read_metadata()` and an example `metadata.yml` (`system.file("metadata.yml", package = "autoslider.core")`) so `{token}` values can be kept in a yaml file. `read_spec()` now also accepts a metadata file path for its `metadata` argument and reads it for you, e.g. `read_spec("spec.yml", metadata = "metadata.yml")`.
+
 # autoslider.core 0.3.3
 
  * Adding mcp server.

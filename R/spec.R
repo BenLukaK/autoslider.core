@@ -3,8 +3,11 @@
 #' Read yaml spec file and split according to filter lists
 #'
 #' @param spec_file `character`. Path to a yaml spec file
-#' @param metadata Named `list` (or `NULL`) of study-level values that is merged
-#'   into every spec entry. Its elements can be referenced as `{token}`
+#' @param metadata Study-level token values merged into every spec entry. Either
+#'   a named `list` (or `NULL`), or a `character(1)` path to a yaml metadata file
+#'   (see [read_metadata()] and the example at
+#'   `system.file("metadata.yml", package = "autoslider.core")`), which is read
+#'   into a list for you. Its elements can be referenced as `{token}`
 #'   placeholders in the `titles` and `footnotes` fields of the spec and are
 #'   substituted during decoration (see [apply_tokens()]). For example, with
 #'   `metadata = list(study = "BP12345")` a spec title of
@@ -35,11 +38,50 @@
 #' ## are filled in during decoration (e.g. a title of "... Study {study}").
 #' spec <- read_spec(spec_file, metadata = list(study = "BP12345"))
 #'
+#' ## The same metadata can be kept in a yaml file and read via `read_spec()`
+#' metadata_file <- system.file("metadata.yml", package = "autoslider.core")
+#' spec <- read_spec(spec_file, metadata = metadata_file)
+#'
 read_spec <- function(spec_file = "spec.yml",
                       metadata = NULL) {
+  if (is.character(metadata)) {
+    metadata <- read_metadata(metadata)
+  }
   spec <- yaml::read_yaml(spec_file, eval.expr = TRUE)
   spec_obj <- check_and_flattern_suffix(spec, metadata = metadata)
   as_spec(spec_obj)
+}
+
+#' Read a study metadata file
+#'
+#' Reads a yaml metadata file into a named `list` of study-level values suitable
+#' for the `metadata` argument of [read_spec()] and [apply_tokens()]. Each
+#' top-level key in the file becomes a `{token}` that can be referenced in the
+#' `titles` and `footnotes` fields of a spec. An example file is shipped at
+#' `system.file("metadata.yml", package = "autoslider.core")`.
+#'
+#' @param metadata_file `character(1)`. Path to a yaml metadata file, i.e. a flat
+#'   mapping of `key: value` pairs.
+#'
+#' @return A named `list` of metadata values.
+#'
+#' @seealso [read_spec()], [apply_tokens()]
+#'
+#' @export
+#'
+#' @examples
+#' metadata_file <- system.file("metadata.yml", package = "autoslider.core")
+#'
+#' ## Take a look at the 'raw' content of the metadata file
+#' cat(readLines(metadata_file), sep = "\n")
+#'
+#' ## Read it into a named list of token values
+#' read_metadata(metadata_file)
+read_metadata <- function(metadata_file = "metadata.yml") {
+  checkmate::assert_file_exists(metadata_file, access = "r")
+  metadata <- yaml::read_yaml(metadata_file, eval.expr = TRUE)
+  checkmate::assert_list(metadata, names = "named", .var.name = "metadata file contents")
+  metadata
 }
 
 #' Flatten spec entries with multiple suffixes

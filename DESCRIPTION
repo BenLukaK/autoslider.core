@@ -1,8 +1,8 @@
 Type: Package
 Package: autoslider.core
 Title: Slide Automation for Tables, Listings and Figures
-Version: 0.3.3.9001
-Date: 2026-09-01
+Version: 0.3.3.9003
+Date: 2026-09-09
 Authors@R: c(
     person("Joe", "Zhu", , "joe.zhu@roche.com", role = c("cre", "aut"),
            comment = c(ORCID = "0000-0001-7566-2787")),
@@ -53,6 +53,7 @@ Imports:
     grid,
     gridExtra (>= 2.3),
     gtsummary (>= 2.6.0),
+    jsonlite (>= 1.8.0),
     methods,
     officer (>= 0.7.0),
     rlang (>= 1.1.1),
@@ -68,7 +69,7 @@ Suggests:
     crane (>= 0.3.2),
     data.table (>= 1.17.8),
     devtools (>= 2.4.5),
-    ellmer (>= 0.2.0),
+    ellmer (>= 0.4.0),
     filters (>= 0.3.1),
     glue (>= 1.8.0),
     htmltools (>= 0.5.8.1),

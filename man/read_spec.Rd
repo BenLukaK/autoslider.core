@@ -9,7 +9,15 @@ read_spec(spec_file = "spec.yml", metadata = NULL)
 \arguments{
 \item{spec_file}{`character`. Path to a yaml spec file}
 
-\item{metadata}{Metadata of study}
+\item{metadata}{Study-level token values merged into every spec entry. Either
+a named `list` (or `NULL`), or a `character(1)` path to a yaml metadata file
+(see [read_metadata()] and the example at
+`system.file("metadata.yml", package = "autoslider.core")`), which is read
+into a list for you. Its elements can be referenced as `{token}`
+placeholders in the `titles` and `footnotes` fields of the spec and are
+substituted during decoration (see [apply_tokens()]). For example, with
+`metadata = list(study = "BP12345")` a spec title of
+`"Demographics - Study {study}"` becomes `"Demographics - Study BP12345"`.}
 }
 \value{
 An object of class `spec` which is a `list` where each element corresponds
@@ -27,6 +35,14 @@ cat(readLines(spec_file)[1:24], sep = "\n")
 ## This is how it looks once read into R
 spec <- read_spec(spec_file)
 spec[1:3]
+
+## Supply study metadata so that `{token}` placeholders in titles/footnotes
+## are filled in during decoration (e.g. a title of "... Study {study}").
+spec <- read_spec(spec_file, metadata = list(study = "BP12345"))
+
+## The same metadata can be kept in a yaml file and read via `read_spec()`
+metadata_file <- system.file("metadata.yml", package = "autoslider.core")
+spec <- read_spec(spec_file, metadata = metadata_file)
 
 }
 \author{

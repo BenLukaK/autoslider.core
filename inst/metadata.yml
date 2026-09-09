@@ -1,0 +1,32 @@
+# ---------------------------------------------------------------------------
+# Study metadata
+#
+# A flat list of study-level values. Each key below becomes a {token} that can
+# be referenced in the `titles` and `footnotes` fields of a spec (see spec.yml)
+# and is substituted into the text during decoration.
+#
+# Read it on its own with read_metadata(), or hand the path straight to
+# read_spec() and let it read the file for you:
+#
+#   metadata <- read_metadata(
+#     system.file("metadata.yml", package = "autoslider.core")
+#   )
+#   spec <- read_spec("spec.yml", metadata = metadata)
+#
+#   # equivalently -- read_spec() resolves a file path to a metadata list:
+#   spec <- read_spec(
+#     "spec.yml",
+#     metadata = system.file("metadata.yml", package = "autoslider.core")
+#   )
+#
+# A spec title of "Demographics - Study {study}" then becomes
+# "Demographics - Study BP12345". Unknown tokens raise an error.
+# See ?read_metadata, ?read_spec and ?apply_tokens.
+# ---------------------------------------------------------------------------
+study: BP12345
+ro: RO12345678
+cut_date: 17-FEB-2014
+extr_date: 17-JUN-2014
+part_id: 1
+cohort_value: Cohort 2
+spotfire_link: Insert link here.

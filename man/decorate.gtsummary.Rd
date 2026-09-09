@@ -4,7 +4,15 @@
 \alias{decorate.gtsummary}
 \title{decorate gtsummary}
 \usage{
-\method{decorate}{gtsummary}(x, titles = "", footnotes = "", paper = "L11", for_test = FALSE, ...)
+\method{decorate}{gtsummary}(
+  x,
+  titles = "",
+  footnotes = "",
+  paper = "L11",
+  for_test = FALSE,
+  metadata = NULL,
+  ...
+)
 }
 \arguments{
 \item{x}{gtsummary object to decorate}
@@ -16,6 +24,9 @@
 \item{paper}{paper size. default is "L8".}
 
 \item{for_test}{`logic` CICD parameter}
+
+\item{metadata}{Named `list` (or `NULL`) of token values used to substitute
+`{token}` placeholders in `titles`/`footnotes`. See [apply_tokens()].}
 
 \item{...}{Additional arguments. not used.}
 }

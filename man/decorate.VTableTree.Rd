@@ -4,7 +4,15 @@
 \alias{decorate.VTableTree}
 \title{Decorate TableTree}
 \usage{
-\method{decorate}{VTableTree}(x, titles = "", footnotes = "", paper = "P8", for_test = FALSE, ...)
+\method{decorate}{VTableTree}(
+  x,
+  titles = "",
+  footnotes = "",
+  paper = "P8",
+  for_test = FALSE,
+  metadata = NULL,
+  ...
+)
 }
 \arguments{
 \item{x}{A VTableTree object representing the data to be decorated.}
@@ -16,6 +24,9 @@
 \item{paper}{Orientation and font size as string, e.g. "P8"; "L11"}
 
 \item{for_test}{`logic` CICD parameter}
+
+\item{metadata}{Named `list` (or `NULL`) of token values used to substitute
+`{token}` placeholders in `titles`/`footnotes`. See [apply_tokens()].}
 
 \item{...}{Additional arguments passed to the decoration function.}
 }

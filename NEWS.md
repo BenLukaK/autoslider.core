@@ -1,4 +1,4 @@
-# autoslider.core 0.3.3.9004
+# autoslider.core 0.3.3.9005
 
  * Added `add_ai_story()` (and an `add_ai_story` MCP tool): a post-processing step
    that reads a generated `.pptx`, asks an LLM to tell the story of the tables, and

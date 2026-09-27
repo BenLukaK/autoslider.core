@@ -70,6 +70,14 @@
   footnotes: ''
   paper: L6
   suffix: FAS
+- program: t_mh_slide
+  titles: Medical History by System Organ Class and Preferred Term
+  footnotes: 'Patients are counted once in each system organ class and preferred term.'
+  paper: L6
+  suffix: FAS
+  args:
+    arm: "TRT01A"
+    add_all_patients_col: TRUE
 - program: t_tte_slide
   titles: Time to Event Summary for {filter_titles("adsl", "adtte")}
   footnotes: ''

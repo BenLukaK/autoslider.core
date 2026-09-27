@@ -32,15 +32,18 @@ LBT
 LLM
 Lil
 MCP
+MHT
 ORCID
 Ollama
 OpenAI
 PARAM
 PARAMCD
+PTs
 PowerShell
 Powerpoint
 Preprocess
 SAE
+SOCs
 TLG
 TLGs
 TRT
@@ -50,6 +53,7 @@ WSL
 Xiang
 adae
 adam
+admh
 adsl
 ael
 aesi
@@ -64,6 +68,7 @@ autofit
 autoslider
 catalogue
 cbind
+cdisc
 centralised
 centre
 colspan
@@ -71,6 +76,7 @@ dVTableTree
 decoratedGrob
 decoratedGrobSet
 deepseek
+deterministically
 df
 dgtsummary
 dm
@@ -104,7 +110,10 @@ outfile
 ph
 ppt
 pptx
+radmh
 rds
+renderer
+reproducibly
 reusability
 rlistings
 roche

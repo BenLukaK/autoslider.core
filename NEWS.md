@@ -1,5 +1,7 @@
 # autoslider.core 0.3.3.9008
 
+ * Added `t_mh_slide()` integration and a reproducibly generated synthetic
+   `eg_admh` example dataset for medical-history summaries.
  * Added `add_ai_story()` (and an `add_ai_story` MCP tool): a post-processing step
    that reads a generated `.pptx`, asks an LLM to tell the story of the tables, and
    inserts real content slides -- a summary section at the front and a conclusions

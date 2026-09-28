@@ -119,6 +119,35 @@
     Code
       dim(get(datai))
     Output
+      [1] 1919   68
+
+---
+
+    Code
+      head(get(datai))
+    Output
+      # A tibble: 6 x 68
+        STUDYID   USUBJID   SUBJID SITEID   AGE AGEU  SEX   RACE  ETHNIC COUNTRY DTHFL
+        <chr>     <chr>     <chr>  <chr>  <int> <fct> <fct> <fct> <fct>  <fct>   <fct>
+      1 AB12345-1 AB12345-~ id-141 BRA-1     35 YEARS F     WHITE NOT H~ BRA     N    
+      2 AB12345-1 AB12345-~ id-141 BRA-1     35 YEARS F     WHITE NOT H~ BRA     N    
+      3 AB12345-1 AB12345-~ id-141 BRA-1     35 YEARS F     WHITE NOT H~ BRA     N    
+      4 AB12345-1 AB12345-~ id-141 BRA-1     35 YEARS F     WHITE NOT H~ BRA     N    
+      5 AB12345-1 AB12345-~ id-141 BRA-1     35 YEARS F     WHITE NOT H~ BRA     N    
+      6 AB12345-1 AB12345-~ id-141 BRA-1     35 YEARS F     WHITE NOT H~ BRA     N    
+      # i 57 more variables: INVID <chr>, INVNAM <chr>, ARM <fct>, ARMCD <fct>,
+      #   ACTARM <fct>, ACTARMCD <fct>, TRT01P <fct>, TRT01A <fct>, TRT02P <fct>,
+      #   TRT02A <fct>, REGION1 <fct>, STRATA1 <fct>, STRATA2 <fct>, BMRKR1 <dbl>,
+      #   BMRKR2 <fct>, ITTFL <fct>, SAFFL <fct>, BMEASIFL <fct>, BEP01FL <fct>,
+      #   AEWITHFL <fct>, RANDDT <date>, TRTSDTM <dttm>, TRTEDTM <dttm>,
+      #   TRT01SDTM <dttm>, TRT01EDTM <dttm>, TRT02SDTM <dttm>, TRT02EDTM <dttm>,
+      #   AP01SDTM <dttm>, AP01EDTM <dttm>, AP02SDTM <dttm>, AP02EDTM <dttm>, ...
+
+---
+
+    Code
+      dim(get(datai))
+    Output
       [1] 3200   65
 
 ---

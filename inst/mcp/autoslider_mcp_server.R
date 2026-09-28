@@ -91,7 +91,8 @@ fn_run_pipeline <- function(dataset_paths) {
   if (dataset_paths == "example") {
     datasets <- list(
       adsl = autoslider.core::eg_adsl |> mutate(FASFL = SAFFL),
-      adae = autoslider.core::eg_adae
+      adae = autoslider.core::eg_adae,
+      admh = autoslider.core::eg_admh
     )
   } else {
     pairs    <- trimws(strsplit(dataset_paths, ",")[[1]])

@@ -259,6 +259,7 @@ data <- list(
     ) |>
     preprocess_t_ds(), # this preproccessing is required by one of the autoslider.core functions
   "adae" = eg_adae,
+  "admh" = eg_admh,
   "adtte" = eg_adtte,
   "adrs" = eg_adrs,
   "adlb" = eg_adlb
@@ -287,6 +288,38 @@ outputs <- spec_file |>
 We can have a look at one of the outputs stored in the outputs file:
 ```{r}
 outputs$t_dm_slide_ITT
+```
+
+### Medical history workflow
+
+The bundled `eg_admh` dataset contains synthetic medical-history records for
+subjects in `eg_adsl`. Subjects without medical history still contribute to
+the ADSL population denominators. Select the bundled medical-history spec to
+apply its Full Analysis Set filter and generate the table:
+
+```{r}
+filters::load_filters(
+  system.file("filters.yml", package = "autoslider.core"),
+  overwrite = TRUE
+)
+mh_data <- list(
+  adsl = eg_adsl,
+  admh = eg_admh
+)
+
+mh_outputs <- system.file("spec.yml", package = "autoslider.core") |>
+  read_spec() |>
+  filter_spec(program == "t_mh_slide") |>
+  generate_outputs(datasets = mh_data) |>
+  decorate_outputs(version_label = NULL)
+
+mh_outputs$t_mh_slide_FAS
+```
+
+Export the medical-history table using the existing slide renderer:
+
+```{r, eval = FALSE}
+generate_slides(mh_outputs, outfile = "medical_history.pptx")
 ```
 
 Now we can save it to a slide. 

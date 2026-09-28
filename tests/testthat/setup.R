@@ -92,6 +92,9 @@ adae_two_arm <- adae |>
   dplyr::filter(TRT01A %in% c("A: Drug X", "B: Placebo")) |>
   mutate(TRT01A = factor(TRT01A, levels = c("A: Drug X", "B: Placebo")))
 
+admh <- eg_admh |>
+  mutate(TRT01A = factor(TRT01A, levels = c("A: Drug X", "B: Placebo", "C: Combination")))
+
 advs <- eg_advs |>
   mutate(TRT01A = factor(TRT01A, levels = c("A: Drug X", "B: Placebo", "C: Combination")))
 
@@ -131,6 +134,7 @@ testdata <- list(
   "adae_aesev" = adae_aesev,
   "adae_atoxgr" = adae_atoxgr,
   "adae_custom" = adae_custom,
+  "admh" = admh,
   "adtte" = adtte,
   "adrs" = adrs,
   "advs" = advs,

@@ -4,6 +4,7 @@ ADAE
 ADEG
 ADEX
 ADLB
+ADMH
 ADRS
 ADSL
 ADTR
@@ -53,7 +54,6 @@ WSL
 Xiang
 adae
 adam
-admh
 adsl
 ael
 aesi
@@ -110,7 +110,6 @@ outfile
 ph
 ppt
 pptx
-radmh
 rds
 renderer
 reproducibly

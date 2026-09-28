@@ -307,10 +307,10 @@ mh_data <- list(
   admh = eg_admh
 )
 
-mh_outputs <- system.file("spec.yml", package = "autoslider.core") %>%
-  read_spec() %>%
-  filter_spec(program == "t_mh_slide") %>%
-  generate_outputs(datasets = mh_data) %>%
+mh_outputs <- system.file("spec.yml", package = "autoslider.core") |>
+  read_spec() |>
+  filter_spec(program == "t_mh_slide") |>
+  generate_outputs(datasets = mh_data) |>
   decorate_outputs(version_label = NULL)
 
 mh_outputs$t_mh_slide_FAS

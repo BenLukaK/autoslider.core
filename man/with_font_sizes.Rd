@@ -31,8 +31,9 @@ Sizes are only forwarded to arguments the underlying formatter actually
 declares. A formatter with an explicit `body_font_size`/`header_font_size`/
 `footer_font_size` argument (or a `...`) receives the corresponding size;
 sizes a formatter cannot accept are dropped rather than raising an
-"unused argument" error. When no sizes are supplied the original formatter is
-returned unchanged.
+"unused argument" error. Additional arguments supplied when the returned
+function is called are forwarded to the underlying formatter. When no sizes
+are supplied the original formatter is returned unchanged.
 }
 \examples{
 small <- with_font_sizes(black_format_tb, body_font_size = 6, header_font_size = 6)

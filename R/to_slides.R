@@ -1,3 +1,19 @@
+confidential_footnote <- "Confidential and for internal use only"
+default_footer_font_size <- 8L
+
+make_footnote_value <- function(value, font_size = NULL) {
+  if (is.null(font_size)) {
+    return(as_paragraph(value))
+  }
+
+  assertthat::assert_that(
+    is.numeric(font_size),
+    length(font_size) == 1,
+    !is.na(font_size)
+  )
+  as_paragraph(as_chunk(value, props = fp_text(font.size = font_size)))
+}
+
 #' generate slides based on output
 #'
 #' @param outputs List of output
@@ -17,7 +33,8 @@
 #' @param font_size Deck-wide default table font sizes, a named `list` with any
 #'   of `body`, `header`, `footer` (point sizes). Per-slide sizes declared in the
 #'   spec (a `font_size:` block on the entry) override these. Applied by wrapping
-#'   the slide's `table_format` via [with_font_sizes()]; see Details.
+#'   the slide's `table_format` via [with_font_sizes()]. The footer defaults to
+#'   the body size, or 8 pt when no body size is supplied; see Details.
 #' @param ... arguments passed to program
 #' @return No return value, called for side effects
 #' @details
@@ -39,6 +56,9 @@
 #'     footer: 5
 #' }
 #' The `font_size` argument sets deck-wide defaults; per-slide values win.
+#' When no footer size is supplied, the resolved body size is used, falling back
+#' to 8 pt. This default is applied to the Confidential footnote on every
+#' supported slide path, including `decor = FALSE`.
 #' @export
 #' @examplesIf require(filters)
 #'
@@ -84,7 +104,7 @@ generate_slides <- function(outputs,
       current_title <- outputs@main_title
     }
     outputs <- list(
-      decorate(outputs, titles = current_title, footnotes = "Confidential and for internal use only")
+      decorate(outputs, titles = current_title, footnotes = confidential_footnote)
     )
   } else if (any(c(
     inherits(outputs, "data.frame"),
@@ -140,11 +160,19 @@ generate_slides <- function(outputs,
     sp <- attr(x, "spec")
     modifyList(deck_fs, (sp$font_size) %||% list())
   }
+  resolve_font_sizes <- function(x) {
+    fs <- slide_fs(x)
+    fs$footer <- fs$footer %||% fs$body %||% default_footer_font_size
+    fs
+  }
+  resolve_footer_font_size <- function(x) {
+    resolve_font_sizes(x)$footer
+  }
   # Effective formatter for a slide: its spec `table_format` (else the deck-wide
   # one, else `default_fmt`), wrapped so the resolved font sizes are applied.
   resolve_format <- function(x, default_fmt) {
     sp <- attr(x, "spec")
-    fs <- slide_fs(x)
+    fs <- resolve_font_sizes(x)
     base_fmt <- (sp$table_format) %||% dots$table_format %||% default_fmt
     with_font_sizes(base_fmt, fs$body, fs$header, fs$footer)
   }
@@ -173,7 +201,7 @@ generate_slides <- function(outputs,
   for (x in outputs) {
     if (inherits(x, "dVTableTree") || inherits(x, "VTableTree")) {
       tf <- resolve_format(x, orange_format)
-      footer_pt <- slide_fs(x)$footer
+      footer_pt <- resolve_footer_font_size(x)
       y <- call_ft(x, list(lpp = t_lpp, cpp = t_cpp, table_format = tf))
       usernotes <- x@usernotes
       for (tt in y) {
@@ -183,19 +211,22 @@ generate_slides <- function(outputs,
         ))
       }
     } else if (inherits(x, "dlisting")) {
+      footer_pt <- resolve_footer_font_size(x)
       y <- call_ft(x, list(cpp = l_cpp, lpp = l_lpp))
       for (tt in y) {
         call_slide(tt, list(
-          table_loc = center_table_loc(tt$ft, ppt_width = width, ppt_height = height)
+          table_loc = center_table_loc(tt$ft, ppt_width = width, ppt_height = height),
+          footer_font_size = footer_pt
         ))
       }
     } else if (inherits(x, "data.frame")) { # this is dedicated for small data frames without pagination
       tf <- resolve_format(x, orange_format)
+      footer_pt <- resolve_footer_font_size(x)
       y <- call_ft(x, list(table_format = tf))
-      call_slide(y, list(decor = FALSE))
+      call_slide(y, list(decor = FALSE, footer_font_size = footer_pt))
     } else if (inherits(x, "dgtsummary")) {
       tf <- resolve_format(x, autoslider_format)
-      footer_pt <- slide_fs(x)$footer
+      footer_pt <- resolve_footer_font_size(x)
       y <- call_ft(x, list(
         lpp = t_lpp, ppt_height = height, ppt_width = width, table_format = tf
       ))
@@ -207,8 +238,9 @@ generate_slides <- function(outputs,
       }
     } else if (inherits(x, "gtsummary") || inherits(x, "tbl_roche_summary")) {
       tf <- resolve_format(x, autoslider_format)
+      footer_pt <- resolve_footer_font_size(x)
       y <- call_ft(x, list(table_format = tf))
-      call_slide(y, list(decor = FALSE))
+      call_slide(y, list(decor = FALSE, footer_font_size = footer_pt))
     } else {
       if (any(class(x) %in% c("decoratedGrob", "decoratedGrobSet", "ggplot"))) {
         if (inherits(x, "ggplot")) {
@@ -332,13 +364,13 @@ get_proper_title <- function(title, max_char = 60, title_color = "#1C2B39") {
 #' @param usernotes User notes
 #' @param decor Should table be decorated
 #' @param layout layout from theme
-#' @param footer_font_size Optional point size for the footnote text. `NULL`
-#'   keeps the existing footnote size set on the flextable.
+#' @param footer_font_size Point size for the footnote text, defaulting to 8.
+#'   `NULL` keeps the existing footnote size set on the flextable.
 #' @param ... additional arguments
 #' @return Slide with added content
 table_to_slide <- function(ppt, content, decor = TRUE, layout = "Title and Content",
                            table_loc = ph_location_type("body"), usernotes = "",
-                           footer_font_size = NULL, ...) {
+                           footer_font_size = 8L, ...) {
   layt_summary <- layout_summary(ppt)
   assertthat::assert_that(layout %in% layt_summary$layout)
   ppt_master <- layt_summary$master[1]
@@ -354,11 +386,7 @@ table_to_slide <- function(ppt, content, decor = TRUE, layout = "Title and Conte
     }
     # print(content_footnotes)
     if (content$footnotes != "") {
-      footnote_value <- if (!is.null(footer_font_size)) {
-        as_paragraph(as_chunk(content$footnotes, props = fp_text(font.size = footer_font_size)))
-      } else {
-        as_paragraph(content$footnotes)
-      }
+      footnote_value <- make_footnote_value(content$footnotes, footer_font_size)
       out <- footnote(out,
         i = 1, j = 1,
         value = footnote_value,
@@ -374,7 +402,7 @@ table_to_slide <- function(ppt, content, decor = TRUE, layout = "Title and Conte
     out <- content
     out <- footnote(out,
       i = 1, j = 1,
-      value = as_paragraph("Confidential and for internal use only"),
+      value = make_footnote_value(confidential_footnote, footer_font_size),
       ref_symbols = " ", part = "header", inline = TRUE
     )
   }

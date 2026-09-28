@@ -1,5 +1,10 @@
 # autoslider.core 0.3.3.9009
 
+ * Confidential footnotes now render at 8 pt by default, or follow the resolved
+   body size when one is supplied. The size is applied on both the decorated
+   and `decor = FALSE` slide paths, so no PPTX/XML post-processing is needed.
+ * `with_font_sizes()` now forwards additional formatter arguments supplied by
+   its caller.
  * Added `t_mh_slide()` integration and a reproducibly generated synthetic
    `eg_admh` example dataset for medical-history summaries.
  * Added `add_ai_story()` (and an `add_ai_story` MCP tool): a post-processing step

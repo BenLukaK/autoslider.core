@@ -47,7 +47,8 @@ Specify this optional argument to modify the width of all of the listings displa
 \item{font_size}{Deck-wide default table font sizes, a named `list` with any
 of `body`, `header`, `footer` (point sizes). Per-slide sizes declared in the
 spec (a `font_size:` block on the entry) override these. Applied by wrapping
-the slide's `table_format` via [with_font_sizes()]; see Details.}
+the slide's `table_format` via [with_font_sizes()]. The footer defaults to
+the body size, or 8 pt when no body size is supplied; see Details.}
 
 \item{...}{arguments passed to program}
 }
@@ -76,6 +77,9 @@ t_dm_slide_FAS:
     footer: 5
 }
 The `font_size` argument sets deck-wide defaults; per-slide values win.
+When no footer size is supplied, the resolved body size is used, falling back
+to 8 pt. This default is applied to the Confidential footnote on every
+supported slide path, including `decor = FALSE`.
 }
 \examples{
 \dontshow{if (require(filters)) withAutoprint(\{ # examplesIf}

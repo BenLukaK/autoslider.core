@@ -11,7 +11,7 @@ table_to_slide(
   layout = "Title and Content",
   table_loc = ph_location_type("body"),
   usernotes = "",
-  footer_font_size = NULL,
+  footer_font_size = 8L,
   ...
 )
 }
@@ -28,8 +28,8 @@ table_to_slide(
 
 \item{usernotes}{User notes}
 
-\item{footer_font_size}{Optional point size for the footnote text. `NULL`
-keeps the existing footnote size set on the flextable.}
+\item{footer_font_size}{Point size for the footnote text, defaulting to 8.
+`NULL` keeps the existing footnote size set on the flextable.}
 
 \item{...}{additional arguments}
 }

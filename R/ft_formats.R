@@ -168,8 +168,9 @@ black_format_tb <- function(ft, body_font_size = 8, header_font_size = 8,
 #' declares. A formatter with an explicit `body_font_size`/`header_font_size`/
 #' `footer_font_size` argument (or a `...`) receives the corresponding size;
 #' sizes a formatter cannot accept are dropped rather than raising an
-#' "unused argument" error. When no sizes are supplied the original formatter is
-#' returned unchanged.
+#' "unused argument" error. Additional arguments supplied when the returned
+#' function is called are forwarded to the underlying formatter. When no sizes
+#' are supplied the original formatter is returned unchanged.
 #'
 #' @param table_format A function taking a flextable as its first argument and
 #'   returning a flextable (e.g. [autoslider_format()], [black_format_tb()]).
@@ -198,12 +199,17 @@ with_font_sizes <- function(table_format,
   }
 
   function(ft, ...) {
+    args <- list(...)
+    overridden <- intersect(names(args), names(sizes))
+    if (length(overridden) > 0) {
+      args[overridden] <- NULL
+    }
     fmls <- formalArgs(table_format)
     keep <- if (is.null(fmls) || "..." %in% fmls) {
       sizes
     } else {
       sizes[names(sizes) %in% fmls]
     }
-    do.call(table_format, c(list(ft = ft), keep))
+    do.call(table_format, c(list(ft = ft), args, keep))
   }
 }

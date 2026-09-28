@@ -1,4 +1,4 @@
-# autoslider.core 0.3.3.9008
+# autoslider.core 0.3.3.9009
 
  * Added `t_mh_slide()` integration and a reproducibly generated synthetic
    `eg_admh` example dataset for medical-history summaries.

@@ -343,9 +343,13 @@ decorate_outputs <- function(outputs,
     }
 
     if ("ggplot" %in% class(output)) {
-      decorate.ggplot(output, titles = full_title, metadata = spec)
+      decorated <- decorate.ggplot(output, titles = full_title, metadata = spec)
+      attr(decorated, "spec") <- spec
+      decorated
     } else if ("grob" %in% class(output)) {
-      decorate.grob(output, metadata = spec)
+      decorated <- decorate.grob(output, metadata = spec)
+      attr(decorated, "spec") <- spec
+      decorated
     } else {
       structure(
         .Data = decorate(

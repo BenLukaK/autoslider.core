@@ -16,6 +16,7 @@ generate_slides(
   l_cpp = 150,
   fig_editable = FALSE,
   font_size = NULL,
+  extra_content = NULL,
   ...
 )
 }
@@ -50,6 +51,9 @@ spec (a `font_size:` block on the entry) override these. Applied by wrapping
 the slide's `table_format` via [with_font_sizes()]. The footer defaults to
 the body size, or 8 pt when no body size is supplied; see Details.}
 
+\item{extra_content}{One \code{\link{slide_content}} descriptor for a second object on
+a single-output deck. A spec entry can provide the descriptor instead.}
+
 \item{...}{arguments passed to program}
 }
 \value{
@@ -80,6 +84,14 @@ The `font_size` argument sets deck-wide defaults; per-slide values win.
 When no footer size is supplied, the resolved body size is used, falling back
 to 8 pt. This default is applied to the Confidential footnote on every
 supported slide path, including `decor = FALSE`.
+
+## Multi-content slides
+A spec entry may define `extra_content` with \code{\link{slide_content}}, or a caller
+may pass one descriptor through `extra_content` when `outputs` contains one
+primary object. Both the primary location (`table_loc` or `figure_loc`) and
+the secondary location must be named placeholders in an explicitly selected
+layout. Each panel must fit and resolve to exactly one page; pagination and
+truncation are rejected.
 }
 \examples{
 \dontshow{if (require(filters)) withAutoprint(\{ # examplesIf}

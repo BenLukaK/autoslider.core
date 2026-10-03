@@ -14,6 +14,195 @@ make_footnote_value <- function(value, font_size = NULL) {
   as_paragraph(as_chunk(value, props = fp_text(font.size = font_size)))
 }
 
+#' Describe secondary content for a multi-content slide
+#'
+#' `slide_content()` describes one caller-supplied object that will share a slide
+#' with a primary autoslider output. The object is rendered only when the slide is
+#' generated, after the requested placeholder has been resolved in the template.
+#'
+#' @param value A prepared `flextable`, `external_img`, `ggplot`, or grid grob.
+#' @param location Name of a content placeholder in the selected layout.
+#' @param fig_editable Whether a ggplot should be added as editable DrawingML.
+#'   `NULL` inherits the deck setting.
+#' @return An object of class `slide_content`.
+#' @export
+slide_content <- function(value, location, fig_editable = NULL) {
+  if (!is.character(location) || length(location) != 1L || is.na(location) || !nzchar(location)) {
+    stop("`location` must be one non-empty placeholder label.", call. = FALSE)
+  }
+  if (!is.null(fig_editable) && (!is.logical(fig_editable) || length(fig_editable) != 1L || is.na(fig_editable))) {
+    stop("`fig_editable` must be NULL or one non-missing logical value.", call. = FALSE)
+  }
+
+  structure(
+    list(value = value, location = location, fig_editable = fig_editable),
+    class = "slide_content"
+  )
+}
+
+#' Convert one table-like object for use as secondary slide content
+#'
+#' @param x A table-like object or a prepared `flextable`.
+#' @param lpp,cpp Pagination settings used for table and listing inputs.
+#' @param table_format Optional formatter for converted tables.
+#' @param ... Arguments passed to [to_flextable()].
+#' @return A single `flextable`.
+#' @export
+as_slide_flextable <- function(x, lpp = 20, cpp = 200, table_format = NULL, ...) {
+  if (inherits(x, "flextable")) {
+    return(x)
+  }
+
+  sp <- attr(x, "spec") %||% list()
+  if (is.null(table_format)) {
+    table_format <- sp$table_format
+  }
+  if (is.null(table_format)) {
+    table_format <- if (inherits(x, c("gtsummary", "tbl_roche_summary", "dgtsummary"))) {
+      autoslider_format
+    } else {
+      orange_format
+    }
+  }
+  fs <- sp$font_size %||% list()
+  table_format <- with_font_sizes(table_format, fs$body, fs$header, fs$footer)
+
+  out <- if (inherits(x, "dflextable")) {
+    x
+  } else if (inherits(x, c("dVTableTree", "VTableTree"))) {
+    to_flextable(x, lpp = lpp, cpp = cpp, table_format = table_format, ...)
+  } else if (inherits(x, "dlisting")) {
+    to_flextable(x, lpp = lpp, cpp = cpp, ...)
+  } else if (inherits(x, "dgtsummary")) {
+    to_flextable(x, lpp = lpp, table_format = table_format, ...)
+  } else {
+    to_flextable(x, table_format = table_format, ...)
+  }
+  if (inherits(out, "dflextable")) {
+    if (length(out) != 1L) {
+      stop(
+        "Secondary table content requires more than one page; a multi-content slide requires one page per panel.",
+        call. = FALSE
+      )
+    }
+    out <- out[[1]]$ft
+  }
+
+  if (!inherits(out, "flextable")) {
+    stop("`x` could not be converted to one flextable for slide content.", call. = FALSE)
+  }
+
+  out
+}
+
+is_slide_content <- function(x) inherits(x, "slide_content")
+
+validate_slide_content <- function(x) {
+  if (!is_slide_content(x)) {
+    stop("`extra_content` must be created with `slide_content()`.", call. = FALSE)
+  }
+  if (is.list(x$value) && !inherits(x$value, c("flextable", "external_img", "ggplot", "grob"))) {
+    stop("`slide_content()` accepts one prepared flextable, external image, ggplot, or grob.", call. = FALSE)
+  }
+  if (inherits(x$value, c("decoratedGrob", "decoratedGrobSet", "autoslider_error"))) {
+    stop(
+      "Decorated output wrappers cannot be secondary content; supply a prepared flextable or self-contained graphic.",
+      call. = FALSE
+    )
+  }
+  if (!inherits(x$value, c("flextable", "external_img", "ggplot", "grob"))) {
+    stop("`slide_content()` accepts one prepared flextable, external image, ggplot, or grob.", call. = FALSE)
+  }
+  if (inherits(x$value, "external_img") && isTRUE(x$fig_editable)) {
+    stop("An external image cannot be inserted as editable content.", call. = FALSE)
+  }
+  x
+}
+
+resolve_slide_master <- function(ppt, layout, master = NULL, require_unique = FALSE) {
+  layouts <- layout_summary(ppt)
+  choices <- layouts[layouts$layout == layout, , drop = FALSE]
+  if (!nrow(choices)) {
+    stop(sprintf("Layout `%s` is not available in the template.", layout), call. = FALSE)
+  }
+  if (!is.null(master)) {
+    if (!is.character(master) || length(master) != 1L || !master %in% choices$master) {
+      stop(sprintf("Layout `%s` is not available in master `%s`.", layout, master), call. = FALSE)
+    }
+    return(master)
+  }
+
+  masters <- unique(choices$master)
+  if (require_unique && length(masters) != 1L) {
+    stop(sprintf("Layout `%s` appears in multiple masters; specify `master`.", layout), call. = FALSE)
+  }
+  masters[[1]]
+}
+
+composite_panel_properties <- function(ppt, layout, master, label, role) {
+  props <- officer::layout_properties(ppt, layout = layout, master = master)
+  panel <- props[props$ph_label == label, , drop = FALSE]
+  if (nrow(panel) != 1L) {
+    stop(
+      sprintf(
+        "The %s placeholder `%s` is not available exactly once in layout `%s` / master `%s`.",
+        role, label, layout, master
+      ),
+      call. = FALSE
+    )
+  }
+  panel
+}
+
+panel_size <- function(panel) {
+  list(width = as.numeric(panel$cx[[1]]), height = as.numeric(panel$cy[[1]]))
+}
+
+validate_flextable_fits_panel <- function(ft, panel, role) {
+  dims <- flextable::flextable_dim(ft)
+  size <- panel_size(panel)
+  width <- sum(dims$widths)
+  height <- sum(dims$heights)
+  if (width > size$width || height > size$height) {
+    stop(
+      sprintf(
+        paste0(
+          "%s table (%.2f x %.2f in) does not fit its placeholder (%.2f x %.2f in). ",
+          "Resize the table, choose another layout, or use separate slides."
+        ),
+        role, width, height, size$width, size$height
+      ),
+      call. = FALSE
+    )
+  }
+}
+
+insert_slide_content <- function(ppt, content, panel, fig_editable = FALSE) {
+  value <- content$value
+  if (inherits(value, "flextable")) {
+    validate_flextable_fits_panel(value, panel, "Secondary")
+    return(ph_with(ppt, value = value, location = ph_location_label(content$location)))
+  }
+  if (inherits(value, "external_img")) {
+    return(ph_with(ppt, value = value, location = ph_location_label(content$location)))
+  }
+  if (inherits(value, "ggplot")) {
+    if (isTRUE(fig_editable)) {
+      return(ph_with(ppt, value = rvg::dml(ggobj = value), location = ph_location_label(content$location)))
+    }
+    return(ph_with(ppt, value = value, location = ph_location_label(content$location)))
+  }
+  if (inherits(value, "grob")) {
+    figure <- list(grob = value)
+    size <- panel_size(panel)
+    return(ph_with_img(
+      ppt, figure = figure, fig_width = size$width, fig_height = size$height,
+      figure_loc = ph_location_label(content$location)
+    ))
+  }
+  stop("Unsupported secondary slide content.", call. = FALSE)
+}
+
 #' generate slides based on output
 #'
 #' @param outputs List of output
@@ -35,6 +224,8 @@ make_footnote_value <- function(value, font_size = NULL) {
 #'   spec (a `font_size:` block on the entry) override these. Applied by wrapping
 #'   the slide's `table_format` via [with_font_sizes()]. The footer defaults to
 #'   the body size, or 8 pt when no body size is supplied; see Details.
+#' @param extra_content One [slide_content()] descriptor for a second object on
+#'   a single-output deck. A spec entry can provide the descriptor instead.
 #' @param ... arguments passed to program
 #' @return No return value, called for side effects
 #' @details
@@ -59,6 +250,14 @@ make_footnote_value <- function(value, font_size = NULL) {
 #' When no footer size is supplied, the resolved body size is used, falling back
 #' to 8 pt. This default is applied to the Confidential footnote on every
 #' supported slide path, including `decor = FALSE`.
+#'
+#' ## Multi-content slides
+#' A spec entry may define `extra_content` with [slide_content()], or a caller
+#' may pass one descriptor through `extra_content` when `outputs` contains one
+#' primary object. Both the primary location (`table_loc` or `figure_loc`) and
+#' the secondary location must be named placeholders in an explicitly selected
+#' layout. Each panel must fit and resolve to exactly one page; pagination and
+#' truncation are rejected.
 #' @export
 #' @examplesIf require(filters)
 #'
@@ -93,7 +292,7 @@ generate_slides <- function(outputs,
                             template = file.path(system.file(package = "autoslider.core"), "theme/basic.pptx"),
                             fig_width = 9, fig_height = 5, t_lpp = 20, t_cpp = 200,
                             l_lpp = 20, l_cpp = 150, fig_editable = FALSE,
-                            font_size = NULL, ...) {
+                            font_size = NULL, extra_content = NULL, ...) {
   if (any(c(
     inherits(outputs, "VTableTree"),
     inherits(outputs, "listing_df")
@@ -136,6 +335,9 @@ generate_slides <- function(outputs,
   }
 
   assert_that(is.list(outputs))
+  if (!is.null(extra_content) && length(outputs) != 1L) {
+    stop("`extra_content` can be supplied directly only when generating one primary output.", call. = FALSE)
+  }
 
   # ======== generate slides =======#
   # Arguments forwarded to to_flextable()/table_to_slide(). `table_format` and
@@ -182,13 +384,68 @@ generate_slides <- function(outputs,
   # `call_slide()` but must be dropped before `to_flextable()`, otherwise they leak
   # through the formatter's `...` (e.g. `autoslider_format()`) and error with
   # "unused argument".
-  slide_only_args <- c("decor", "layout", "table_loc", "usernotes", "footer_font_size")
+  slide_only_args <- c(
+    "decor", "layout", "master", "table_loc", "figure_loc", "usernotes",
+    "footer_font_size"
+  )
   fwd_ft <- fwd[setdiff(names(fwd), slide_only_args)]
   call_ft <- function(x, more) {
     do.call(to_flextable, c(list(x = x), more, fwd_ft))
   }
-  call_slide <- function(content, more) {
+  call_slide <- function(ppt, content, more) {
     do.call(table_to_slide, c(list(ppt = ppt, content = content), more, fwd))
+  }
+
+  resolve_composition <- function(x, kind) {
+    sp <- attr(x, "spec") %||% list()
+    spec_extra <- sp$extra_content
+    if (!is.null(spec_extra) && !is.null(extra_content)) {
+      stop("Define `extra_content` either on the spec entry or in `generate_slides()`, not both.", call. = FALSE)
+    }
+    secondary <- spec_extra %||% extra_content
+    if (is.null(secondary)) {
+      return(NULL)
+    }
+    secondary <- validate_slide_content(secondary)
+
+    location_name <- if (identical(kind, "figure")) "figure_loc" else "table_loc"
+    primary_label <- sp[[location_name]] %||% dots[[location_name]]
+    if (!is.character(primary_label) || length(primary_label) != 1L || is.na(primary_label) || !nzchar(primary_label)) {
+      stop(
+        sprintf("A multi-content slide requires an explicit named `%s` for the primary panel.", location_name),
+        call. = FALSE
+      )
+    }
+    if (identical(primary_label, secondary$location)) {
+      stop("Primary and secondary content must use different placeholders.", call. = FALSE)
+    }
+
+    layout <- sp$layout %||% dots$layout %||% "Title and Content"
+    master <- resolve_slide_master(ppt, layout, sp$master %||% dots$master, require_unique = TRUE)
+    primary_panel <- composite_panel_properties(ppt, layout, master, primary_label, "primary")
+    secondary_panel <- composite_panel_properties(ppt, layout, master, secondary$location, "secondary")
+
+    list(
+      content = secondary,
+      layout = layout,
+      master = master,
+      primary_label = primary_label,
+      primary_panel = primary_panel,
+      secondary_panel = secondary_panel
+    )
+  }
+
+  require_one_page <- function(content, output, panel) {
+    if (length(content) != 1L) {
+      stop(
+        sprintf(
+          "%s: %s content requires %d pages; a multi-content slide requires one page per panel.",
+          output, panel, length(content)
+        ),
+        call. = FALSE
+      )
+    }
+    content[[1]]
   }
 
   # set slides layout
@@ -204,8 +461,20 @@ generate_slides <- function(outputs,
       footer_pt <- resolve_footer_font_size(x)
       y <- call_ft(x, list(lpp = t_lpp, cpp = t_cpp, table_format = tf))
       usernotes <- x@usernotes
+      composite <- resolve_composition(x, "table")
+      if (!is.null(composite)) {
+        tt <- require_one_page(y, (attr(x, "spec") %||% list(output = "primary"))$output, "primary")
+        validate_flextable_fits_panel(tt$ft, composite$primary_panel, "Primary")
+        ppt <- table_to_slide(
+          ppt, tt, table_loc = ph_location_label(composite$primary_label),
+          usernotes = usernotes, footer_font_size = footer_pt, layout = composite$layout,
+          master = composite$master, extra_content = composite$content,
+          secondary_panel = composite$secondary_panel, fig_editable = fig_editable
+        )
+        next
+      }
       for (tt in y) {
-        call_slide(tt, list(
+        ppt <- call_slide(ppt, tt, list(
           table_loc = center_table_loc(tt$ft, ppt_width = width, ppt_height = height),
           usernotes = usernotes, footer_font_size = footer_pt
         ))
@@ -213,8 +482,20 @@ generate_slides <- function(outputs,
     } else if (inherits(x, "dlisting")) {
       footer_pt <- resolve_footer_font_size(x)
       y <- call_ft(x, list(cpp = l_cpp, lpp = l_lpp))
+      composite <- resolve_composition(x, "table")
+      if (!is.null(composite)) {
+        tt <- require_one_page(y, (attr(x, "spec") %||% list(output = "primary"))$output, "primary")
+        validate_flextable_fits_panel(tt$ft, composite$primary_panel, "Primary")
+        ppt <- table_to_slide(
+          ppt, tt, table_loc = ph_location_label(composite$primary_label),
+          footer_font_size = footer_pt, layout = composite$layout, master = composite$master,
+          extra_content = composite$content, secondary_panel = composite$secondary_panel,
+          fig_editable = fig_editable
+        )
+        next
+      }
       for (tt in y) {
-        call_slide(tt, list(
+        ppt <- call_slide(ppt, tt, list(
           table_loc = center_table_loc(tt$ft, ppt_width = width, ppt_height = height),
           footer_font_size = footer_pt
         ))
@@ -223,15 +504,38 @@ generate_slides <- function(outputs,
       tf <- resolve_format(x, orange_format)
       footer_pt <- resolve_footer_font_size(x)
       y <- call_ft(x, list(table_format = tf))
-      call_slide(y, list(decor = FALSE, footer_font_size = footer_pt))
+      composite <- resolve_composition(x, "table")
+      if (!is.null(composite)) {
+        validate_flextable_fits_panel(y, composite$primary_panel, "Primary")
+        ppt <- table_to_slide(
+          ppt, y, decor = FALSE, table_loc = ph_location_label(composite$primary_label),
+          footer_font_size = footer_pt, layout = composite$layout, master = composite$master,
+          extra_content = composite$content, secondary_panel = composite$secondary_panel,
+          fig_editable = fig_editable
+        )
+        next
+      }
+      ppt <- call_slide(ppt, y, list(decor = FALSE, footer_font_size = footer_pt))
     } else if (inherits(x, "dgtsummary")) {
       tf <- resolve_format(x, autoslider_format)
       footer_pt <- resolve_footer_font_size(x)
       y <- call_ft(x, list(
         lpp = t_lpp, ppt_height = height, ppt_width = width, table_format = tf
       ))
+      composite <- resolve_composition(x, "table")
+      if (!is.null(composite)) {
+        tt <- require_one_page(y, (attr(x, "spec") %||% list(output = "primary"))$output, "primary")
+        validate_flextable_fits_panel(tt$ft, composite$primary_panel, "Primary")
+        ppt <- table_to_slide(
+          ppt, tt, table_loc = ph_location_label(composite$primary_label),
+          footer_font_size = footer_pt, layout = composite$layout, master = composite$master,
+          extra_content = composite$content, secondary_panel = composite$secondary_panel,
+          fig_editable = fig_editable
+        )
+        next
+      }
       for (tt in y) {
-        call_slide(tt, list(
+        ppt <- call_slide(ppt, tt, list(
           table_loc = center_gts_table_loc(tt$ft, ppt_width = width, ppt_height = height),
           footer_font_size = footer_pt
         ))
@@ -240,7 +544,18 @@ generate_slides <- function(outputs,
       tf <- resolve_format(x, autoslider_format)
       footer_pt <- resolve_footer_font_size(x)
       y <- call_ft(x, list(table_format = tf))
-      call_slide(y, list(decor = FALSE, footer_font_size = footer_pt))
+      composite <- resolve_composition(x, "table")
+      if (!is.null(composite)) {
+        validate_flextable_fits_panel(y, composite$primary_panel, "Primary")
+        ppt <- table_to_slide(
+          ppt, y, decor = FALSE, table_loc = ph_location_label(composite$primary_label),
+          footer_font_size = footer_pt, layout = composite$layout, master = composite$master,
+          extra_content = composite$content, secondary_panel = composite$secondary_panel,
+          fig_editable = fig_editable
+        )
+        next
+      }
+      ppt <- call_slide(ppt, y, list(decor = FALSE, footer_font_size = footer_pt))
     } else {
       if (any(class(x) %in% c("decoratedGrob", "decoratedGrobSet", "ggplot"))) {
         if (inherits(x, "ggplot")) {
@@ -249,7 +564,19 @@ generate_slides <- function(outputs,
 
         assertthat::assert_that(inherits(x, "decoratedGrob") || inherits(x, "decoratedGrobSet"))
 
-        figure_to_slide(ppt,
+        composite <- resolve_composition(x, "figure")
+        if (!is.null(composite)) {
+          primary_size <- panel_size(composite$primary_panel)
+          ppt <- figure_to_slide(
+            ppt, content = x, fig_width = primary_size$width, fig_height = primary_size$height,
+            figure_loc = ph_location_label(composite$primary_label), fig_editable = fig_editable,
+            layout = composite$layout, master = composite$master,
+            extra_content = composite$content, secondary_panel = composite$secondary_panel
+          )
+          next
+        }
+
+        ppt <- figure_to_slide(ppt,
           content = x, fig_width = fig_width, fig_height = fig_height,
           figure_loc = center_figure_loc(fig_width, fig_height, ppt_width = width, ppt_height = 1.17 * height),
           fig_editable = fig_editable, ...
@@ -370,10 +697,10 @@ get_proper_title <- function(title, max_char = 60, title_color = "#1C2B39") {
 #' @return Slide with added content
 table_to_slide <- function(ppt, content, decor = TRUE, layout = "Title and Content",
                            table_loc = ph_location_type("body"), usernotes = "",
-                           footer_font_size = 8L, ...) {
-  layt_summary <- layout_summary(ppt)
-  assertthat::assert_that(layout %in% layt_summary$layout)
-  ppt_master <- layt_summary$master[1]
+                           footer_font_size = 8L, master = NULL,
+                           extra_content = NULL, secondary_panel = NULL,
+                           fig_editable = FALSE, ...) {
+  ppt_master <- resolve_slide_master(ppt, layout, master)
   args <- list(...)
   ppt <- layout_default(ppt, layout)
 
@@ -407,16 +734,33 @@ table_to_slide <- function(ppt, content, decor = TRUE, layout = "Title and Conte
     )
   }
 
-  ppt <- do_call(add_slide, x = ppt, master = ppt_master, ...)
+  ppt <- add_slide(ppt, layout = layout, master = ppt_master)
   ppt <- ph_with(ppt, value = out, location = table_loc)
   ppt <- set_notes(ppt, value = usernotes,
                    location = notes_location_type("body"))
-  ph_with_args <- args[unlist(lapply(args, function(x) all(c("location", "value") %in% names(x))))]
-  res <- lapply(ph_with_args, function(x) {
-    ppt <- ph_with(ppt, value = x$value, location = x$location)
-  })
+  ppt <- add_located_content(ppt, args)
 
-  res
+  if (!is.null(extra_content)) {
+    if (is.null(secondary_panel)) {
+      stop("Secondary panel metadata is required for multi-content slides.", call. = FALSE)
+    }
+    ppt <- insert_slide_content(
+      ppt, validate_slide_content(extra_content), secondary_panel,
+      fig_editable = extra_content$fig_editable %||% fig_editable
+    )
+  }
+
+  ppt
+}
+
+add_located_content <- function(ppt, args) {
+  ph_with_args <- args[vapply(args, function(x) {
+    is.list(x) && all(c("location", "value") %in% names(x))
+  }, logical(1))]
+  for (arg in ph_with_args) {
+    ppt <- ph_with(ppt, value = arg$value, location = arg$location)
+  }
+  ppt
 }
 
 #' Create location container to center the figure, based on ppt size and
@@ -475,10 +819,9 @@ figure_to_slide <- function(ppt, content,
                             layout = "Title and Content",
                             figure_loc = ph_location_type("body"),
                             fig_editable = FALSE,
-                            ...) {
-  layt_summary <- layout_summary(ppt)
-  assertthat::assert_that(layout %in% layt_summary$layout)
-  ppt_master <- layt_summary$master[1]
+                            master = NULL, extra_content = NULL,
+                            secondary_panel = NULL, ...) {
+  ppt_master <- resolve_slide_master(ppt, layout, master)
   ppt <- layout_default(ppt, layout)
   args <- list(...)
 
@@ -491,23 +834,32 @@ figure_to_slide <- function(ppt, content,
   }
 
   if ("decoratedGrob" %in% class(content)) {
-    ppt <- do_call(add_slide, x = ppt, master = ppt_master, ...)
+    ppt <- add_slide(ppt, layout = layout, master = ppt_master)
     if (fig_editable) {
       content_list <- g_export(content)
-      ppt <- ph_with(ppt, content_list$dml, location = ph_location_type(type = "body"))
+      ppt <- ph_with(ppt, content_list$dml, location = figure_loc)
     } else {
       ppt <- ph_with_img(ppt, content, fig_width, fig_height, figure_loc)
     }
 
-    ph_with_args <- args[unlist(lapply(args, function(x) all(c("location", "value") %in% names(x))))]
-    res <- lapply(ph_with_args, function(x) {
-      ppt <- ph_with(ppt, value = x$value, location = x$location)
-    })
-    res
+    ppt <- add_located_content(ppt, args)
+    if (!is.null(extra_content)) {
+      if (is.null(secondary_panel)) {
+        stop("Secondary panel metadata is required for multi-content slides.", call. = FALSE)
+      }
+      ppt <- insert_slide_content(
+        ppt, validate_slide_content(extra_content), secondary_panel,
+        fig_editable = extra_content$fig_editable %||% fig_editable
+      )
+    }
+    ppt
   } else if ("decoratedGrobSet" %in% class(content)) { # for decoratedGrobSet, a list of figures are created and added
+    if (!is.null(extra_content)) {
+      stop("A decoratedGrobSet cannot be used as the primary panel of a multi-content slide.", call. = FALSE)
+    }
     # revisit, to make more efficent
     for (figure in content) {
-      ppt <- do_call(add_slide, x = ppt, master = ppt_master, ...)
+      ppt <- add_slide(ppt, layout = layout, master = ppt_master)
       ppt <- ph_with_img(ppt, figure, fig_width, fig_height, figure_loc)
     }
     ppt
